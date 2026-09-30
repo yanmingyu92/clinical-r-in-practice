@@ -1,0 +1,146 @@
+# ARD: Analysis Results Data, and Why Tables Are Becoming Data
+
+A submission table is a strange artifact: the most expensive data in the industry, rendered into a form that cannot be queried. Every number in an AE table traces to patients, standards, and programs — and then becomes a cell in an RTF, where its history ends. Reviewers eyeball a thousand cells against a shell; QC re-runs programs to rebuild them; and any downstream use (a patient-level story, an aggregate reuse, a machine check) requires starting over.
+
+Analysis Results Data is the industry's decision to stop rendering its results into dead ends. An ARD is a tidy, machine-readable table of every statistic in every display — the counts, the percentages, the p-values, with their groupings, parameters, and provenance attached. The table becomes one *view* of the ARD; the QC diff, the review check, and the future reuse all become queries. The `{cards}` package is the standard's working implementation, and this part is its field manual.
+
+> **TL;DR** — ARD separates the statistic from its typography: compute once into a cards object (a tidy data frame of results with provenance), then render to any table framework, diff mechanically against expectations, and reuse across displays. This part builds a real ARD, renders it two ways, shows the QC pattern, and explains why agencies' data-first review direction makes this the load-bearing standard of the reporting layer.
+
+## The fundamentals
+
+### What an ARD actually contains
+
+A cards object is a tidy data frame where every row is one statistic, with a stable column grammar:
+
+| Column group | Contents | Example |
+|---|---|---|
+| Grouping | The display's row/column coordinates | `group1 = "AESOC"`, `group1_level = "Blood disorders"`; `group2 = "AEDECOD"`, `group2_level = "Anaemia"` |
+| Variable & stat | What was computed | `variable = "USUBJID"`, `stat_name = "n"`, `stat_label = "n"` |
+| Value | The number itself | `stat = 14` |
+| Context | Which analysis, which column arm | arm in `group1_level = "Drug 10mg"` (ARDs extracted from gtsummary add `gts_column`) |
+| Provenance | Which function produced it | `fmt_fn`, `context`, `warning`, `error` |
+
+Two properties do the strategic work. First, *tidiness*: an ARD is ordinary data — filter it, join it, diff it like any data frame. Second, *provenance*: each row knows what it is, so "which statistic is wrong" becomes a row lookup rather than a forensic project.
+
+### Why the standard arrived now
+
+Three pressures converged. Review agencies are moving toward structured, data-first review — an ARD is exactly the artifact a machine-assisted reviewer wants. Multi-format deliverables (part 5's xpt-plus-JSON logic, part 6's renderers) need a single results source with many renderings. And the AI layer (parts 12–14) is only as auditable as its substrate: an agent that fills in a table cell is a risk; an agent that emits ARD rows subject to mechanical diff is a workflow. The standard did not cause any of these; it is the common denominator that serves all three.
+
+## The modern workflow
+
+### Computing an ARD
+
+The cards package (with its ARDverse siblings) makes the summary functions themselves ARD-native:
+
+```r
+library(cards)
+library(dplyr)
+
+ard <- ard_stack(
+  data = adsl,
+  ard_categorical(variables = AGEGR1, denominator = "column"),
+  .by = TRT01P
+  # compose more: ard_continuous(...), or add .missing = TRUE
+)
+
+tibble::as_tibble(ard)
+```
+
+The object is a data frame. Print it, filter it, write it to JSON. Nothing about it knows what a table is — which is the point.
+
+### Rendering from ARD
+
+gtsummary consumes ARD directly, in both directions — this is the standard's production path:
+
+```r
+library(gtsummary)
+
+# From data (computes an internal ARD)
+tbl <- tbl_summary(adsl, by = TRT01P, include = AGEGR1)
+
+# Inspect / reuse the results before any rendering
+# gather_ard() returns a named list of ARDs; bind_ard() merges them
+tbl_ard <- tbl |> gather_ard() |> cards::bind_ard()
+```
+
+And the reverse build — table from an existing ARD — is the pattern that changes shop architecture: compute all results once (pipeline stage), render every display from the shared ARD (reporting stage). Part 10's targets graph makes the boundary physical: ARD nodes upstream, rendering nodes downstream, one cache.
+
+### The QC pattern
+
+The mechanical diff is where ARD pays its rent. Compare any two ARDs — specification-expectation vs. computed, or last-cut vs. this-cut — as data:
+
+```r
+expected <- readRDS("qc/expected_agegr1.rds")
+computed <- tbl |> gather_ard() |> cards::bind_ard()
+
+# Structural QC: every expected statistic present, every value matched
+# (cards also ships check_ard_equal()/compare_ard() for exactly this comparison)
+anti_join(expected, computed, by = c("group1", "group1_level", "variable", "stat_name"))
+```
+
+The classic double-programming ritual (part 1) does not disappear — it becomes *ARd-vs-ARD*: independent implementations converge on results objects, and the comparison is a join, exhaustive by construction. Cell-by-cell eyeball QC remains for typography, which is where human eyes belong.
+
+### Reuse across displays
+
+One ARD, many consumers — the quietest win:
+
+```r
+# The same demographic results feed three artifacts
+ard_demo |>
+  filter(stat_name %in% c("n", "p")) |>
+  # ... into the submission table (part 6)
+  # ... into the CSR narrative's inline numbers (part 8)
+  # ... into the DMC dashboard's population panel (part 11)
+```
+
+The number that appears in a table, a report sentence, and a live dashboard stops being three numbers maintained by three teams. It is one row in one object, rendered thrice.
+
+## The agentic way
+
+ARD inverts the AI risk profile of part 6. An agent filling table cells produces typography with hidden judgment; an agent producing ARD rows produces *assertable data* — every claim a row, every row checkable by join. Production LLM-table workflows already run this pattern: the model emits results into a cards structure, mechanical diffs against independent computation gate it, and humans review the exception list rather than the grid. The residual risk moves to specification — whether the *right* statistic was requested — which is a conversation with a statistician, exactly where the industry wants its judgment to live.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — ARD turns agent output from prose into data: diffable, gateable, and precedent to rendering. Agents draft ARD rows and even QC exception reports well; they do not change where the human signs — on the specification and the exceptions, not the pixels.</p>
+  <p>Rule: no agent-authored cell ships without passing the same ARD join a human implementation would face.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-11-16. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- An ARD is every statistic as a tidy, provenance-carrying row; tables become views, and QC becomes joins.
+- cards is the working implementation; gtsummary speaks ARD natively in both directions.
+- The shop-changing pattern: compute once into a shared ARD, render every display from it — one number, one source, many surfaces.
+- ARD-vs-ARD comparison makes independent verification exhaustive by construction; eyeballs return to typography.
+- Structured review, multi-format delivery, and auditable AI all converge on the same substrate — this is the reporting layer's load-bearing standard.
+
+## FAQ
+
+**Is ARD a CDISC standard?**
+It is an emerging standard with CDISC-family alignment in active development — the analysis-results direction agencies and consortia are publicly converging on. The cards implementation is the working open-source expression of the pattern; track the formal standardization separately from the package, exactly as define.xml tracking differs from any one parser.
+
+**Where does ARD sit relative to the analysis datasets themselves?**
+One layer up, and the layer boundary matters: ADaM (part 4) holds analysis-ready records; ARD holds the *statistics computed from them* — counts, medians, model estimates with their coordinates. Keeping the two as distinct artifact classes is what lets each carry its own provenance story, and a pipeline that conflates them usually discovers the conflation when a reviewer asks which of the two a number came from.
+
+**What does an adoption roadmap look like in a real shop?**
+The pattern that repeats: one quarter, one table, one team. Pick the display with the heaviest QC load — usually an AE summary — and rebuild it ARD-first: compute the cards object in the pipeline, render the existing shell from it, and run the ARD-vs-ARD comparison against the legacy implementation as a shadow. The shadow run does the political work: when the join reports zero exceptions for two consecutive data cuts, the migration argument makes itself, and the second table converts on request rather than on mandate. Teams that tried the reverse order — mandating ARD across the shell library first — spent their change budget on formatting details and never reached the QC payoff that funds the transformation.
+
+**Do I need to abandon my current tables?**
+No — adopt underneath them. Part 6's frameworks all render from results; the migration is making cards objects that intermediate layer, display by display. Most shops start with one safety table and expand along the shell library.
+
+**What about figures?**
+The same logic generalizes — analysis results underlying a Kaplan-Meier plot are estimands, groups, and event counts, all tidy-representable — and the ecosystem's direction (part 6's statistics-first trend) points the same way. Tables are simply furthest along because their review burden is heaviest.
+
+**How does ARD interact with Dataset-JSON (part 5)?**
+They are siblings, not rivals: Dataset-JSON is the transport form of *analysis datasets*; ARD is the results layer computed from them. A future submission package that carries both — data and results, machine-readable end to end — is the direction every part of this series is pointing.
+
+**Next in the series:** the documents themselves — Quarto for clinical study reports, where all these layers land on paper.
+
+## Exercises
+
+1. **Compute and inspect.** Build a cards object for a demographic summary (any grouping, two statistics) and print it as a tibble. Identify the grouping, stat name, value, and provenance columns for three rows.
+2. **The join, by hand.** Write the anti-join QC pattern from this chapter against a mock "expected" ARD of five rows where one value and one row differ. Predict the output before running.
+3. **Reuse design.** Pick one number that appears in three artifacts at your shop (table, narrative, dashboard). Sketch the single-ARD flow that would render all three, naming each consumer of the rows.
+
+## Case study: the narrative that disagreed
+
+A CSR's narrative said forty-two serious adverse events; the table said thirty-nine. Both artifacts were regenerated for the same data cut; the narrative's number had been typed by a medical writer from an earlier table version. The remediation was this chapter's inline pattern: narrative numbers bind to ARD rows at render time, and the discrepancy class was deleted rather than QC'd. Reconstruct the failure's anatomy — three artifacts, two sources of truth, one typo window — and the single-source property that closes it.

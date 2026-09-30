@@ -1,0 +1,176 @@
+# Quarto for Clinical Study Reports
+
+The clinical study report is where every previous layer lands on paper: ADaM data (part 4), metadata discipline (part 5), results objects (part 7), and tables (part 6), all wrapped in sixty chapters of regulatory prose. For decades the wrapping was manual — programs produced outputs, humans pasted them into Word, and the paste was a process with no audit trail. Quarto's answer is old-fashioned and complete: the document is code. One parameterized source renders the whole CSR or any chapter of it, on demand, identically, forever.
+
+This part builds the reporting layer: the parameterized CSR engine, the branding and template governance that make it company-grade, the SAS engine that lets legacy code participate, and the assembly line where generated TLFs flow into review-ready output without a human clipboard in sight.
+
+> **TL;DR** — Quarto turns the CSR from a pasted artifact into a rendered one: parameters drive study identity, templates carry house style, the SAS engine runs legacy programs inline, and part 7's ARD feeds numbers straight into prose. This part assembles the full pattern — a study report you can rebuild for any data cut in one command — plus the governance that keeps it auditable.
+
+## The fundamentals
+
+### What parameterization buys
+
+A CSR template is one Quarto document with parameters where study identity lives:
+
+```yaml
+---
+title: "Clinical Study Report — {{< meta params.study_id >}}"
+params:
+  study_id: "ABC-123"
+  data_cut: "2026-09-15"
+  treatment: "Drug 10mg"
+format:
+  docx: default
+---
+```
+
+Render for a study, a cut, a treatment arm — the source never forks. The classic Word workflow forked constantly: per-study copies drifted, and the drift was invisible until a reviewer noticed chapter 12's title said the wrong protocol. Parameterization makes the fork structurally impossible: one source, many renders, drift defined as a diff.
+
+### The three document tiers
+
+Not every document in a study's life carries the same weight, and the governance should match:
+
+| Tier | Examples | Lifecycle | Governance |
+|---|---|---|---|
+| Working | Exploratory memos, data review notes | Days | Personal, versioned by Git |
+| Study-facing | TLF review decks, DMC summaries, interim exhibits | Weeks | Template + review, light |
+| Submission | CSR, investigator brochure tables, respond packages | Years | Full template control, QC, audit trail |
+
+The engineering mistake is treating tier one like tier three (nobody renders a memo from a validated pipeline) or tier three like tier one (an untemplated CSR is a future finding). This part's machinery is for tiers two and three; tier one just borrows the habits.
+
+## The modern workflow
+
+### The report that renders itself
+
+A CSR chapter whose numbers come from the pipeline — part 7's ARD flowing into prose:
+
+````markdown
+# Demographics {#sec-demographics}
+
+As of the `r params$data_cut` data cut, `r n_treated` subjects received
+study treatment.
+
+```r
+#| message: false
+#| output: false
+library(cards); library(dplyr)
+ard_demo <- readRDS(paste0("pipeline/ard/", params$study_id, "_demography.rds"))
+n_treated <- ard_demo |> filter(stat_name == "n") |> pull(stat) |> unlist() |> sum()
+```
+
+::: {#tbl-demog}
+```r
+gtsummary::tbl_ard_summary(ard_demo)
+```
+
+Summary of demographic characteristics by treatment arm.
+:::
+````
+
+The inline `n_treated` is not a typed number — it is the ARD's number, re-derived at every render. The classic CSR defect (narrative counts disagreeing with tables) is deleted rather than QC'd.
+
+### House style as infrastructure
+
+Company-grade reports separate *content* from *brand*: a Quarto template (`_extensions/` or a shared brand bundle) carries fonts, headers, table styles, and the Word styles reviewers expect.
+
+```powershell
+quarto use template company/csr-quarto-template
+# or attach brand to an existing project
+quarto add company/quarto-brand-csr
+```
+
+The template is versioned, reviewed, and changed by pull request — the difference between "house style" as an aspiration and as an artifact. When the template ships a fix, every future render inherits it; past renders stay exactly what they were, which is the audit property Word macro styling never had.
+
+### The SAS engine: legacy code, modern document
+
+Bilingual shops (part 3's equilibrium) render legacy programs inline rather than maintaining a parallel reporting stack:
+
+````markdown
+```sas
+proc means data=adam.adsl n mean std;
+  var AGE;
+  class TRT01P;
+run;
+```
+````
+
+Quarto executes the SAS program and captures its output into the same document, under the same render and the same parameter set as the R chapters. The migration-era report stops being a political boundary: chapters migrate as their pipelines do (part 3's portfolio logic, applied to documents), and the document never notices.
+
+### The assembly line
+
+The full CSR engine as a directory contract — every part of this series has a named seat:
+
+```
+csr-abc123/
+├── _quarto.yml            # project: renders chapters → docx/pdf/html
+├── _quarto-cut-2026-09-15.yml  # render profile for the data cut
+├── _brand.yml             # house style (template-governed)
+├── chapters/
+│   ├── 12-safety.qmd      # prose + embedded TLFs (this part)
+│   └── ...
+├── tlf/                   # rendered tables (part 6) from ARD (part 7)
+├── pipeline/              # targets project (part 10): data → ARD → tlf
+└── renv/                  # frozen environment
+```
+
+Note the boundary: `_brand.yml` currently styles the html/dashboard/revealjs/typst outputs — for the docx CSR, the house style rides in the template's reference-doc.
+
+One command rebuilds the world:
+
+```powershell
+# Data cut → ARD → TLF → CSR, each layer cached by its owner
+targets::tar_make()
+quarto render --profile cut-2026-09-15
+```
+
+A reviewer asks "rerun against the new cut" and the answer is minutes, not a quarter.
+
+## The agentic way
+
+Documents are where LLMs feel most magical and matter most carefully. The production division of labor is now stable: agents draft *prose that describes data they are given* — chapter narration from ARD, methods boilerplate, reviewer-response skeletons — and the parameterized render keeps every number mechanical. What stays human: the medical narrative's judgment, every interpretation, and the sign-off. The agent that writes flowing text around numbers it did not compute is the industry's oldest documentation risk wearing a new coat; the pipeline that computes numbers an agent then narrates is a genuine productivity leap.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents draft narration from ARD rows well, and reviewers review drafts faster than blank pages. The failure mode is delegation upward: letting the agent choose which results to mention. Selection is interpretation.</p>
+  <p>Rule: agents may narrate what the pipeline computed, in the order the SAP implies; the statistician's name stays on what the chapter claims.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-11-23. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- The CSR becomes code: one parameterized source, every render identical, drift redefined as a diff.
+- Match governance to tier — memos borrow habits, study documents use templates, submission documents live under full control.
+- Inline numbers from the ARD delete the narrative-vs-table discrepancy class at the source.
+- The SAS engine lets legacy programs participate in modern documents; chapters migrate by portfolio, not by decree.
+- Agents narrate; pipelines compute; the sign-off stays human. In that order, and only in that order.
+
+## FAQ
+
+**How does a template-governed report program handle the review cycle itself?**
+The workflow detail that decides adoption: medical writers and reviewers still work in Word, and the render-review loop must respect that. The production pattern is asymmetric by design — Quarto renders the draft to a styled docx, reviewers comment in native Word review mode, and the team resolves comments by editing the *source*, not the rendered file, then re-renders. The comment-resolution step is where discipline pays: a comment on chapter 12's phrasing becomes an edit to `chapters/12-safety.qmd`, the re-render regenerates the whole document, and the diff between renders shows exactly what the review changed — an audit property the copy-paste era never had. Teams that allowed "just fix it in Word for this cut" lost the thread within two cycles; the rule that survives is that the rendered file is always disposable and the source is always the record.
+
+**Can Quarto output Word that my reviewers will accept?**
+Yes — the docx format with a house template produces styled Word with native tables, tracked-changes compatibility, and the styles medical writers expect. The review boundary is behavioral, not technical; most shops run one pilot chapter and the question answers itself.
+
+**How do TLFs enter the document — embedded or referenced?**
+Both patterns work: embedded (tables computed in-chapter) for analysis chapters, referenced (pre-rendered exhibits from the pipeline) for the shell-driven TLF library. The ARD standard makes the two consistent by construction — same results object, different render seats.
+
+**What about eCTD and the submission assembly itself?**
+Quarto's seat ends at review-ready documents; the eCTD envelope, leaf metadata, and validation tooling sit with your regulatory operations tooling. The boundary is clean exactly because this part's outputs are deterministic renders of versioned sources.
+
+**What about multi-study portfolios — one engine, many reports?**
+The same machinery scales without redesign: each study instantiates the template with its parameters and pipeline outputs, and a portfolio render becomes a loop over study configurations — one command, every report current against every cut. Program-level teams run exactly this shape for periodic review decks, and the per-study audit properties carry through unchanged, because each render remains a deterministic function of its own versioned inputs.
+
+**Is a rendered CSR acceptable to agencies?**
+The document *content* and its traceability are what regulators assess; a deterministic, fully re-renderable CSR is the most traceable document the industry has ever been able to produce. Agency-facing pilot submissions have already carried Quarto-rendered components, and the direction of travel (part 14) only strengthens the case.
+
+**Next in the series:** engineering under supervision — risk-based R validation, the qualification memo, and how open source passes inspection.
+
+## Exercises
+
+1. **Parameterize a chapter.** Take a report section you maintain and rebuild it as a parameterized Quarto document: study identity, data cut, and treatment arm as params; at least one inline number computed from data.
+2. **Tier assignment.** Classify five documents from your work into the three-tier table of this chapter, and name what governance each currently has versus what its tier requires.
+3. **The review-loop drill.** Write the two rules of the asymmetric review loop (source edits only, renders disposable) as a checklist for your next review cycle.
+
+## Case study: the paste that failed an audit
+
+An inspection asked when a CSR's table 14.3 had last been regenerated and from what data. The answer lived in a folder of RTFs and an email thread: the table was three data cuts stale, pasted by hand, with no record of the paste. The remediation moved the report into the pipeline as a file target — regeneration became a command with a run log, and the inspector's question became a lookup. Reconstruct the timeline both ways: the paste world's answer versus the render world's answer, and the cost of each in inspection hours.

@@ -1,0 +1,145 @@
+# From SDTM to Submission: The Clinical Data Flow, End to End
+
+A trial produces its value as data on day one and realizes that value years later as a submission package on a regulator's desk. Between those two moments sits the most standardized data pipeline in any industry: hundreds of tables, each with a legislated structure, a named owner, and a review trail. Newcomers see bureaucracy; veterans see the reason pharma R is not just "R plus some packages."
+
+This part draws the whole flow on one map — the datasets, the standards, the roles, and the hand-offs — and marks exactly where the open-source stack has taken hold at each stage.
+
+> **TL;DR** — Clinical data flows through four governed transformations: collection (EDC), tabulation (SDTM), analysis (ADaM), and reporting (TLFs), each wrapped in metadata (define.xml, specs) and ending in a submission package. Every stage has a distinct owner, standard, and failure mode. R now has credible tooling at every stage, but the standards — not the tools — define the architecture. Master the flow first; the packages are just employees.
+
+## The fundamentals
+
+### The four transformations
+
+Data crosses four stations between the clinic and the regulator. Each station changes the *purpose* of the data, not just its shape:
+
+| Station | Input | Output | Governing standard | Primary owner |
+|---|---|---|---|---|
+| Collection | Patient visits, labs, AE reports | Raw clinical database | Protocol, CRF design, CDASH | Data management |
+| Tabulation | Raw database | SDTM domains | SDTMIG, controlled terminology | Statistical programmers |
+| Analysis | SDTM domains | ADaM datasets | ADaMIG, traceability rules | Statistical programmers + biostatisticians |
+| Reporting | ADaM datasets | TLFs, CSR, submission package | Shell specs, eCTD, define.xml | Programmers, QC, medical writing |
+
+Two things surprise every newcomer. First, SDTM and ADaM are not "clean" versus "analytical" versions of the same thing — SDTM is organized *by how data was collected* (one row per event), ADaM *by how it will be analyzed* (one row per analysis). Second, nobody mixes the layers: an ADaM dataset that quietly re-derives a tabulation rule is a finding, not a shortcut.
+
+### The non-negotiables
+
+Three rules survive every tool change, and they explain most of the architecture you will meet in this series:
+
+1. **Traceability.** Every analysis value traces back to a tabulated value or a documented derivation. If a reviewer asks "where did this number come from," the answer is a path, not a person's memory.
+2. **Metadata is contract.** define.xml and the analysis spec are not documentation *about* the data; they are the data's legal description. Labels, lengths, controlled terminology, origin — all of it is checkable and checked.
+3. **Independent verification.** Double programming — one independent implementation, one comparison — is the industry's core QC ritual. Any tool that speeds this up (see part 12) must still produce a comparable, reviewable difference.
+
+### Who owns what
+
+The flow is also a map of careers. Data management guards collection. Statistical programmers own SDTM, ADaM, and TLFs. Biostatisticians own the analysis model and the SAP that programmers implement. Medical writers assemble the CSR that wraps the TLFs in prose. QC and validation make all of it auditable. Regulatory affairs carries the package to the agency. When something breaks at a hand-off — and it always breaks at a hand-off — knowing which desk owns the boundary is half the fix.
+
+## The modern workflow
+
+### Reading the flow in R
+
+You do not need the whole pharmaverse (part 2) to touch this pipeline. The base stack can read every layer in a few lines:
+
+```r
+library(haven)      # xpt, the submission transport format
+library(dplyr)
+
+# The tabulation layer: one row per adverse event
+ae <- read_xpt("sdtm/ae.xpt")
+
+# The analysis layer: one row per subject, analysis-ready
+adsl <- read_xpt("adam/adsl.xpt")
+
+# The metadata layer: define.xml is machine-readable
+# library(DefineXMLPassword)  # pseudocode — placeholder for your shop's define.xml parser
+```
+
+Notice what the columns tell you. SDTM carries collection names in upper case (`AESTDTC`, `AEDECOD`); ADaM carries analysis-ready variables (`TRTA`, `AVAL`, `PARAMCD`) plus the two prefixes that make traceability mechanical: `--SEQ` keys pointing back to the source row and `SRCDOM`/`SRCVAR` pointing to the source domain.
+
+### The submission package
+
+The final artifact is a folder tree whose shape is regulated: `m5/datasets/<study>` for data and define, with analysis datasets, programs, and the ADRG under `m5/datasets/<study>/analysis/`, all under eCTD headings. Two formats currently matter for the datasets themselves:
+
+| Format | Extension | Status | R tooling |
+|---|---|---|---|
+| SAS transport v5 | `.xpt` | Required today | `haven::write_xpt()`, `xportr` |
+| Dataset-JSON | `.json` | Emerging alternative, agency-endorsed pilots | `{datasetjson}` package |
+
+The interesting property of Dataset-JSON is not the format — it is that a JSON dataset carries richer types than xpt and arrives with its metadata inline, which is why the metadata-driven pipeline in part 5 treats the two as output targets of one spec, not as separate worlds.
+
+### Where R sits at each stage
+
+| Stage | Five years ago | Today |
+|---|---|---|
+| SDTM mapping | SAS macros over specs | `{sdtm.oak}` and spec-driven R pipelines emerging |
+| ADaM derivation | SAS macros, company-internal | `{admiral}` — the industry asset library (part 4) |
+| TLF production | SAS `PROC REPORT` empires | `{rtables}`, `{gt}` family, `{cards}` (parts 6–7) |
+| CSR assembly | Word macros, manual paste | Quarto parameterized reports (part 8) |
+| Package validation | Vendor tools, paper | R Validation Hub tooling (part 9) |
+
+No station has been abandoned; each has an active open-source project with pharma companies behind it. That is the structural change this series documents — not "R is allowed now" but "R now arrives with its own regulatory infrastructure."
+
+### A five-minute self-check
+
+Run this against any ADaM you meet. Three questions, three code blocks, and you have audited the layer that matters most:
+
+```r
+# 1. Traceability: does every analysis record cite a source?
+adcm %>%
+  filter(is.na(SRCSEQ) | is.na(SRCDOM)) %>%
+  tally()   # expect 0 for fully traceable records
+
+# 2. Structure: one row per subject in ADSL?
+adsl %>%
+  distinct(STUDYID, USUBJID) %>%
+  tally() == nrow(adsl)   # expect TRUE
+
+# 3. Consistency: population flag agrees with treatment assignment?
+adsl %>%
+  count(ITTEFL, TRT01P == "Placebo")   # eyeball the cross-tab
+```
+
+If a dataset passes these three, it was built by someone who understood the flow. If it fails, you have found the work of a tool that was used before the standard was learned — the industry's most common defect.
+
+## The agentic way
+
+Agents are already competent readers of this flow: an LLM can walk a define.xml, summarize a spec, or explain why an ADaM traceability column is missing. Drafting SDTM-to-ADaM mapping code is within reach for well-specified domains. What agents cannot yet do is *own* a hand-off — the accountability that makes a programmer answer an inspector's question two years later.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents can draft every artifact in this flow: SDTM mapping scaffolds, ADaM derivation candidates, TLF shells, even review-guide prose. The failure mode is structural: they will happily re-derive a tabulation rule inside an ADaM dataset — the classic finding — because the boundary between layers is a regulatory convention, not a syntax rule.</p>
+  <p>Rule for this series: agents may draft at any station; a human owns every hand-off. Traceability includes authorship.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-10-05. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Four stations, four owners: collection (DM), tabulation (SDTM), analysis (ADaM), reporting (TLFs). Breakage concentrates at hand-offs.
+- SDTM organizes by collection; ADaM by analysis. Never mix the logics in one dataset.
+- Traceability, metadata-as-contract, and independent QC are the three rules that outlive every tool; the rest of this series is their engineering expression.
+- R now has audited tooling at every station; the architecture is set by the standards, not by the language.
+- Dataset-JSON is converging with metadata-driven pipelines — watch part 5 before betting on xpt forever.
+
+## FAQ
+
+**Do regulators require SAS?**
+No. Agencies review datasets and define files; xpt is a transport convention, not a language mandate. Modern submissions have been delivered end-to-end in R, with agency pilots ongoing. What regulators require is traceability and reviewability — which is a standards question, not a language question.
+
+**Which layer should I learn first?**
+ADaM. It is where analysis, standards, and tooling meet, and the part of the pipeline this series' stack (admiral onward) most directly serves. SDTM depth can follow; ADaM fluency is the employable skill.
+
+**Is SDTM mapping being automated away?**
+Spec-driven mapping is the current frontier — the same metadata-driven logic of part 5, applied earlier in the flow. The mapping decisions remain human; the mechanical application of them is being automated, which is exactly the division that repeats across this series.
+
+**What is the single most common audit finding in this flow?**
+Traceability gaps: an analysis value whose derivation cannot be mechanically followed to a tabulated source or a documented rule. Every tool choice in parts 4–8 exists partly to make that finding impossible.
+
+**Next in the series:** the ecosystem that builds these tools — who makes admiral, why competitors fund the same packages, and how the pharmaverse is governed.
+
+## Exercises
+
+1. **Map a real study.** Take any public clinical trial results document and reconstruct the four transformations of this part as a table: for each station, name the datasets you can infer, the standard that governs it, and the team that likely owned it.
+2. **Audit traceability.** Using the three-question self-check from this chapter, evaluate an ADaM dataset you have access to (or one from a public submission package). Record every failure with the rule it violates.
+3. **The boundary drill.** Write down three derivations you have seen placed in ADaM that re-derive tabulation logic. For each, name the station the logic belonged to and the finding an inspector would write.
+
+## Case study: the hand-off that ate a quarter
+
+A mid-size sponsor's efficacy dataset failed review three weeks before filing — not because a number was wrong, but because two teams had each assumed the other owned imputing missing visit dates. This chapter's map is the prevention: draw the four stations, name an owner for every hand-off, and the ambiguity that cost a quarter cannot exist on paper. Reconstruct this incident from the artifacts you would demand: the spec paragraph, the dataset's origin column, and the email that never had a clear recipient.

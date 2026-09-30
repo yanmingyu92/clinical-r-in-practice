@@ -1,0 +1,109 @@
+# The Next Five Years of Clinical Data Science
+
+Fourteen parts ago, this series began at a wall: R programmers arriving in pharma to find that none of their obvious skills obviously applied. The map since then has been consistent — four governed transformations (part 1), an ecosystem that industrialized them (parts 2-8), the engineering that made them inspectable (parts 9-11), and a machine layer that is now arriving from the middle outward (parts 12-14). This finale compresses the whole into one argument about the next five years, because a map is only worth its shelf life, and this field's shelf life is exactly what we can now estimate.
+
+The argument has three movements. Standards are absorbing the tooling. The tooling is absorbing the validation discipline. And the validation discipline is absorbing the AI — not the reverse, despite every keynote's framing. Get the order right and your next five years of investment compound; get it backwards and you spend them re-earning part 3's ledger.
+
+> **TL;DR** — Five predictions with deadlines: Dataset-JSON and ARD make submissions machine-readable end-to-end; the pharmaverse consolidates into a default stack with a shrinking bespoke layer; validation shifts from package paperwork to workflow qualification; agents become the interface to pipelines for everyone, not a frontier; and the role of statistical programmer completes its shift from syntax translator to specification owner. The series then ships as a book — free, bilingual, with exercises — and this post is its front matter.
+
+## The fundamentals
+
+### The three absorptions
+
+The series' fourteen parts, read as one system, show three absorptions already underway — each with a precedent that makes it predictable rather than speculative:
+
+| Absorption | Meaning | Precedent |
+|---|---|---|
+| Standards absorb tooling | define-round-trips (part 5), ARD (part 7) make artifacts of what tools encoded | SDTM itself, circa 2005-2010 |
+| Tooling absorbs validation | Qualification evidence ships *with* the stack — registries, memos, run logs (parts 9-11, 13) | Linux distros, circa 2010s |
+| Validation absorbs AI | Autonomy granted where verification is mechanical; gates to the record (parts 12-14) | Every automation in GxP history |
+
+The direction of each absorption matters more than its speed, because direction is what you can invest against. Nobody in this series' evidence base successfully ran any of these in reverse: tools never overrode standards for long, paperwork never replaced engineered validation, and no fluency ever earned its own signature.
+
+### What does not change
+
+A five-year forecast in this field earns trust by what it holds constant, and the series found three invariants no respondent, case, or inspection story contradicted:
+
+1. **Traceability is the product.** Every layer — bricks, specs, ARD, graphs, registries — exists to make "where did this number come from" a mechanical question.
+2. **Judgment has a signature.** From SAP citations to release tokens, the human name on the decision is the one component no layer replaced, and the parts 12-14 evidence says none will.
+3. **The middle automates first.** Language-in, language-out, mechanically verified stages fell to automation years before anyone predicted; both boundaries (the clinic, the record) stand.
+
+## The modern workflow
+
+### Five predictions, with deadlines
+
+Forecasting honestly means dating the claims — the era-callout discipline this series taught its readers, applied to itself:
+
+**1. Submissions become machine-readable end to end (2027-2029).** Dataset-JSON (part 5) plus ARD-style results (part 7) plus rendered documents with inline provenance (part 8) compose into packages whose review can begin mechanically. The pilot evidence exists study-by-study; the standardization work is governance, not research. *Invest: make the spec object and results object your study's spine now — they pay without any AI.*
+
+**2. The pharmaverse consolidates into a default (2026-2028).** Part 2's six layers are collapsing toward one opinionated assembly — template, spec, bricks, ARD, render — with the bespoke layer shrinking to therapeutic science. Company templates become *configuration*, not forks; part 3's migration ledgers get shorter as the default absorbs what shops used to build. *Invest: wrap, never fork — and put your differentiation in the science layer where it belongs.*
+
+**3. Validation shifts from packages to workflows (2027-2030).** Part 9 qualified packages; part 10's graphs and part 13's registries qualify *executions*. The memo of 2027 asks "which pipeline commit, which registry scope, which run log" — and the qualification layer becomes continuous (every run re-evidence) rather than episodic (annual review). *Invest: your targets graph and MCP registry are your next validation artifact; build them to be printed.*
+
+**4. Agents become the interface (2027-2029, bounded; open-ended later).** Part 13's bounded loops — impact review, QC triage, assembly — become default interfaces to pipelines for analysts who never write R. The frontier stays bounded by part 14's accountability miles, not by capability. The programmer's interface bifurcates: a professional layer (graphs, specs, gates) and a conversational layer (goals, evidence reports) — same pipeline, two doors. *Invest: the registry discipline — capabilities enumerable, scopes printable — is the interface contract of the next half-decade.*
+
+**5. The role completes its shift (already; visible by 2028).** Part 3's "learning by doing," part 12's constraint ledgers, part 14's specification owners — the profession's center of gravity finishes moving from syntax to specification: encoding conventions so machines draft inside them, and verifying outputs so signatures mean something. The premium of part 3 (bilingual, ecosystem-fluent) becomes the baseline; the new premium is *constraint architecture* — the skill this series has actually been teaching.
+
+### The series as a system, one last map
+
+| You are a… | Your five-year asset | Built from |
+|---|---|---|
+| Programmer | Constraint ledger + ecosystem fluency | Parts 3, 4, 12 |
+| Engineer | Pipeline + registry as printed artifacts | Parts 10, 13 |
+| Validator | Workflow qualification method | Parts 9-11 |
+| Leader | A decision stack that compounds | All fourteen |
+
+### A five-year review, made mechanical
+
+A forecast earns its keep only if the next five years can audit it — so this series ends its final workflow section the way it taught every other one: with the check you run later. The five predictions above are claims with dates; the check is a diff.
+
+```r
+# Re-run in 2030: which predictions shipped, which slipped?
+library(dplyr); library(purrr)
+predictions |>                         # pseudocode: predictions = the dated table above, as data
+  mutate(shipped = map_lgl(evidence_path, file.exists)) |>
+  select(prediction, deadline, shipped)
+```
+
+Keep the table, keep the evidence paths, and let the era-callout discipline close the loop on the series itself: the volatile layer was always meant to be re-verified, and a forecast that cannot be graded was never a forecast — it was a keynote.
+
+## The agentic way
+
+The finale's mirror is the simplest of the series: this argument itself was assembled the way it recommends — evidence packs and transcripts distilled into claims, claims constrained by what fourteen parts could actually support, conclusions gated by a human author who signs this series. The machine drafted; the pipeline verified; the record keeps a name. That is not a metaphor for the future of clinical data science. It is a working instance of it, and you have been reading one for fifteen parts.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — The next five years are not a race to give machines the job. They are the completion of a twenty-year project: making the job's context explicit enough that any sufficiently careful executor — human or machine — can do the middle, while the profession concentrates on the ends where accountability lives.</p>
+  <p>Final rule of the series: build surfaces that verify, hold signatures that mean, and let the middle take care of itself. It will.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2027-01-11. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Three absorptions, all one direction: standards take the tooling, tooling takes the validation discipline, validation takes the AI. Invest with the current, not against it.
+- Three invariants held across every case: traceability is the product, judgment has a signature, the middle automates first.
+- Five dated predictions: machine-readable submissions, a consolidated default stack, workflow validation, agent interfaces, and the specification-owner role.
+- The decade's personal asset is constraint architecture — encoding conventions so that drafting, of any provenance, lands inside them.
+
+## FAQ
+
+**What if I only remember one thing from fifteen parts?**
+The sentence that survives every layer: *the fluency was never the capability; the verification surface is.* Programs, models, and frameworks all rent their credibility from the same landlord — the surface that proves them.
+
+**What should I re-read when a prediction feels wrong?**
+The era-callout dates. Every volatile claim in this series carried one, and this part's predictions are the most volatile of all. The invariants are the durable layer; the dates are the honest ones.
+
+**Where do I disagree with consensus?**
+On speed at the boundaries. The consensus narrative compresses the accountability miles into a footnote; the series' evidence prices them as the journey. That disagreement is a bet, and like all bets in this field, it is auditable in five years — which is the point of writing it down.
+
+**And the book?**
+*Clinical R in Practice* ships now: the fifteen parts you have read, expanded with exercises, worked case studies, and a Chinese edition — free and open, alongside its companion volume *Modern R in Practice*. The series was the draft; this post is the preface; the book is the record. See you at the next wall.
+
+## Exercises
+
+1. **Date your own predictions.** Write three predictions for your shop's next five years, each with a deadline and an evidence path — this chapter's mechanical review, applied locally.
+2. **Invariant audit.** Test the three invariants (traceability, signature, middle-first) against your team's last three tooling decisions. Which decisions ran with the absorptions, which against?
+3. **The five-year asset.** From the role table of this chapter, name your personal asset under construction and the parts of this series that built it. Write the next brick.
+
+## Case study: the team that was ready
+
+When the agent tooling wave arrived, one team compounded it in a quarter: specs already machine-readable, results already ARD, execution already scoped and logged. Theirs was not the best model access — it was the surface this series taught. A parallel team with the same models and no surface produced a year of demos. Reconstruct the difference as an investment ledger: what the ready team built before the wave, what each asset paid when it arrived, and which line items the demo team never bought.

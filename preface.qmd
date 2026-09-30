@@ -1,0 +1,111 @@
+# Preface
+
+This book collects the complete *Clinical R in Practice* series.
+
+Every R programmer who lands in pharma hits the same wall. You arrive knowing tidyverse, maybe targets and Shiny, and you discover that none of it obviously applies: the data must be ADaM, the tables must match a submission shell, the packages must be risk-assessed, and someone from QA will eventually ask you to prove your open-source stack is under control. The industry's answer to that wall has quietly become an entire ecosystem — and almost nobody outside pharma has mapped it.
+
+This series is the map. Fifteen parts, five layers, from the data standards that never change to the AI agents that change every quarter.
+
+> **TL;DR** — This is the syllabus for a 15-part series on the R stack used in regulated clinical development: the pharmaverse ADaM toolchain, regulatory-grade tables and the ARD standard, risk-based package validation, reproducible pipelines with targets, GxP Shiny practice, and the honest state of LLM agents in trial programming. Every part ships runnable code and a selection checklist you can screenshot. When the series completes, it will be assembled — expanded, with exercises — into a free bilingual book.
+
+### The fundamentals
+
+Three layers, three half-lives. Nothing in this field decays at the same speed, and most frustration in pharma R comes from treating one layer like another.
+
+- **L1 — The rules.** CDISC traceability, risk-based validation thinking, GxP reasoning. Learn once; defensible for a decade. When an auditor asks who decided this package was fit for use, they are asking an L1 question, and no amount of tooling answers it for you.
+- **L2 — The stack.** admiral, metacore, rtables, cards, teal, targets, rhino. Slower-moving than people fear, faster than regulators would like. The habits transfer even when the APIs move.
+- **L3 — The frontier.** LLM agents writing ADaM code, MCP servers for clinical data, natural language to CDISC datasets. Reshuffles every few months; treat every specific claim as perishable.
+
+What makes this series different from a tools tour is that all three layers are taught *together*, the way they exist in production: no admiral chapter makes sense without traceability rules, and no AI chapter makes sense without the validation wall it has to climb.
+
+#### The 15 parts, five lines
+
+The series runs five lines. The first three build context — what flows where, who builds the tools, and what switching actually costs an enterprise. The data-chain and reporting lines are the production spine: standards-compliant datasets in, regulatory-grade tables out. The engineering line is what separates a demo from something QA can sign. The frontier line is the volatile one.
+
+| Part | Line | After this part you can… |
+|---|---|---|
+| 1 — From SDTM to submission | Context | Draw every dataset and hand-off between the clinic and the regulator, and say where R sits at each stage |
+| 2 — The pharmaverse ecosystem map | Context | Explain who builds which package, how they interlock, and how your company (or you) enter |
+| 3 — The SAS→R ledger | Context | Argue migration cost and ROI with case studies that survived audit committees |
+| 4 — ADaM with admiral: the LEGO method | Data chain | Build an analysis dataset from composable derivation bricks, with traceability |
+| 5 — Metadata-driven development | Data chain | Turn your define spec into code, checks, labels, and transport files — one source of truth |
+| 6 — rtables vs gt/gtsummary vs flextable | Reporting | Build one AE table three ways and choose with a decision tree instead of habit |
+| 7 — ARD: analysis results data | Reporting | Explain why tables are becoming data, and use the cards standard in a pipeline |
+| 8 — Quarto for clinical study reports | Reporting | Generate parameterized CSR chapters, with the SAS engine still in the loop |
+| 9 — Risk-based R validation | Engineering | Run a real package risk assessment and write the qualification memo QA expects |
+| 10 — targets pipelines | Engineering | Rebuild a clinical analysis so it re-runs in minutes and replays exactly a year later |
+| 11 — Shiny in GxP | Engineering | Take a clinical app from rhino scaffold to a validation evidence file |
+| 12 — LLMs writing trial code | Frontier | Read the 2024–2026 production cases and name the exact wall each one hit |
+| 13 — Agents and MCP in the clinical stack | Frontier | Build an agent workflow over clinical data with audit-friendly guardrails |
+| 14 — Natural language to CDISC | Frontier | Judge how close auto-generated submissions are — and which bottleneck is regulatory |
+| 15 — The next five years | Synthesis | Compress the series into one argument, and get the book announcement |
+
+Numeric order is publication order, and each part opens with enough context to stand alone. If you only read one line, read the reporting line: it is where the standards pressure, the tooling, and the reviewer's eyes all meet.
+
+### The modern workflow
+
+A preview of the spine, so you can see the series' shape in one code block. By part 5 this reads like plain English; today it is a promise:
+
+```r
+library(admiral)      # derivation bricks (part 4)
+library(metacore)     # spec as code (part 5)
+library(xportr)       # labels, lengths, transport (part 5)
+library(cards)        # analysis results as data (part 7)
+library(gtsummary)    # tables from ARD (parts 6–7)
+
+adae <- adsl %>%
+  derive_vars_merged(
+    dataset_add = ae,
+    by_vars = exprs(STUDYID, USUBJID),
+    new_vars = exprs(AEDECOD = AEDECOD, AESTDTC = AESTDTC)
+  ) |>          # L2: the stack, one brick at a time
+  xportr_label(metacore) |>
+  xportr_write("adae.xpt")
+```
+
+Every part follows the same contract: a real problem from trial work, runnable code that solves it honestly, and a selection checklist table designed to be stolen for your next validation meeting. No part assumes you read the previous one in the same week; the series respects that its readers have day jobs and database locks.
+
+### The agentic way
+
+The L3 layer runs through this series differently than most AI writing. The frontier parts (12–15) treat every capability claim as dated evidence, not direction. The production cases in part 12 are ledger entries — task, model role, human gate, failure mode — because the honest pattern so far is that agents excel at drafting derivations and QC diffs, and fail at exactly the things regulators care about: provenance of fallback rules, traceability of decisions, and knowing when a plausible convention is an invented one.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents now draft ADaM derivations, generate teal modules, and write QC comparisons faster than any human. The failure mode is uniform: confident, clean code over unsourced decisions. The bottleneck that remains is not generation; it is verification.</p>
+  <p>Every frontier part ends with the same rule: if an agent drafted it, a human cites it — SAP reference, standard, or spec — before it ships.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-09-29. Re-verify before relying on tool specifics.</p>
+</div>
+
+### How to read it
+
+Three audiences, three entry points:
+
+- **The SAS programmer migrating** (or being migrated): read parts 1–3 in full, then the 4→6→7 spine — ADaM and tables — and keep part 3 as ammunition for the meetings.
+- **The R engineer entering clinical**: read part 1 for vocabulary, then jump to the engineering line. Your engineering instincts are an asset; part 9 is the license to use them.
+- **The statistician or data-science lead**: read parts 2, 3, 9, and 12–15. You will not write the code; you will decide whether the code is allowed.
+
+If you want the from-zero path first — CDISC fundamentals, the statistical computing environment, and AI-assisted habits — start with the [Clinical SP Bootcamp](/blog/clinical-sp-bootcamp-roadmap.html) and return here for the open-source engineering layer. The bootcamp teaches the field; this series teaches the stack. Together they are the curriculum I wish someone had handed me at the wall.
+
+### Key takeaways
+
+- Pharma R is not "R plus some packages"; it is R under a legal reading of traceability, and that framing changes every tool choice.
+- The pharmaverse is a governed ecosystem, not a grab bag — knowing who maintains what is half of validation.
+- Tables are becoming data (ARD). The earlier your pipeline speaks it, the cheaper your future QC.
+- Validation is risk-based reasoning, not paperwork; it can be learned and defended like any engineering discipline.
+- AI in trial programming is real but verification-bound; the frontier parts give you the ledger, not the hype.
+
+### FAQ
+
+**Do I need the bootcamp first?**
+No. The bootcamp builds the field from zero (CDISC, SCE, career); this series assumes the field and teaches the open-source stack. If SDTM and ADaM are already in your vocabulary, start here.
+
+**Is this series for SAS shops too?**
+Yes — parts 1–3 and 9 especially. Most migrations fail on governance, not syntax, and part 3's ledger is written for the people who sign budgets, not the people who write code.
+
+**What if I don't work in pharma?**
+The engineering line (parts 9–11) generalizes to any field where open source meets auditors — medical devices, finance, public health. The data-chain line will feel foreign; that is expected.
+
+**When does the book ship?**
+The series runs weekly through part 15. The book — expanded with exercises, full case studies, and a Chinese edition — follows the final part, free and open, joining [Modern R in Practice](https://yanmingyu92.github.io/posit-conf-2026-bilingual/book/en/) as its clinical companion volume.
+
+**Why bilingual?**
+The Chinese clinical-programming community is large, migrating fast, and poorly served by systematic material on this stack. The English edition speaks to the community building the tools; the Chinese edition speaks to the community adopting them.

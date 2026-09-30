@@ -1,0 +1,196 @@
+# Shiny in GxP: From rhino to a Validation File
+
+A Shiny app is the most dangerous artifact in clinical programming: fast to build, convincing to demo, and — without engineering — completely unauditable. The same property that makes Shiny addictive (an analyst can ship an interactive data view in an afternoon) makes it a validation nightmare (a decision-support tool with no tests, no structure, no provenance, and one global variable named `df`). Regulators noticed years ago, and the industry's response is now mature: Shiny apps in GxP contexts are *software products*, and they earn their place the way software does — structure, tests, evidence.
+
+This part is the complete path: `rhino` for structure, `shinytest2` for automated behavior, teal for the exploration use-case, secure backends and async patterns for scale, and the validation evidence file — the artifact that turns "we have an app" into "we have a controlled system."
+
+> **TL;DR** — A clinical Shiny app passes inspection when five things exist: an engineered structure (rhino), automated behavioral tests (shinytest2), a data-and-access design appropriate to the environment, performance patterns that survive real usage, and a validation file binding it together. This part builds each layer with code and closes with the evidence checklist QA signs against.
+
+## The fundamentals
+
+### What "GxP Shiny" means
+
+GxP touches an app when its outputs inform regulated decisions — safety review, data cleaning decisions, endpoint adjudication support. The classification drives everything:
+
+| Classification | Example | Validation depth |
+|---|---|---|
+| Non-GxP internal | Team dashboards, meeting tools | Engineering hygiene only |
+| Indirect GxP | Review tools whose outputs are independently verified | Qualified environment + tests + documented use |
+| Direct GxP | Decision-support where the app *is* the record | Full validation: IQ/OQ/PQ equivalents, access control, audit trail |
+
+The honest first workshop for any clinical app is placing it on this table — most are indirect, some are direct, and the mistake is building direct-use rigor into a meeting tool (nobody ships it) or meeting-tool rigor into a direct-use system (somebody signs the wrong form).
+
+### The anatomy of an auditable app
+
+The industry's converged structure — rhino encodes it with its `app/logic` + `app/view` layout:
+
+```
+myapp/
+├── app.R                 # entry point: nothing but rhino::app()
+├── app/
+│   ├── main.R            # top-level module
+│   ├── logic/            # pure, unit-testable business logic
+│   └── view/             # Shiny modules
+├── tests/                # testthat unit tests + Cypress E2E
+├── rhino.yml             # configuration
+└── renv.lock             # frozen environment (part 10's discipline)
+```
+
+The load-bearing rule: *logic lives in `app/logic/` as plain functions, and the server is a thin adapter.* A Shiny app whose calculations are plain, unit-testable functions is 80% auditable before any Shiny-specific tooling appears. The app that computes inside reactive expressions entangles its science with its plumbing and validates neither well.
+
+## The modern workflow
+
+### rhino: the scaffold
+
+```r
+rhino::init("ae_explorer")
+# app/ (logic + view), tests/, rhino.yml — the converged structure, generated
+```
+
+rhino's opinions are the industry's accumulated lessons: boxed modules, explicit imports, Sass for styling, `rhino::app()` as the single entry. Adopt the scaffold even if you disagree with its details — the structure is the audit interface, and reviewers have read it before.
+
+### teal: when the use-case is exploration
+
+For the dominant clinical pattern — standard exploration over standard data — `teal` ships the validated wheel:
+
+```r
+library(teal.modules.general)
+library(teal.modules.clinical)
+
+app <- init(
+  data = cdisc_data(
+    ADSL = adsl_r, ADAE = adae_r,
+    code = "readRDS('data/adsl.RDS')"          # reproducibility contract
+  ),
+  modules = modules(
+    tm_data_table(),
+    tm_t_events_summary(label = "AE Summary",   # part 6's tables, interactive
+                        dataname = "ADAE",
+                        arm_var = teal.transform::choices_selected(
+                          teal.transform::variable_choices("ADSL", "TRTA"),
+                          selected = "TRTA"
+                        ))
+  )
+)
+shinyApp(app$ui, app$server)
+```
+
+teal's contract — declared data, declared modules, a reproducibility `code` hook — is why organizations standardize on it for reviewer-facing exploration instead of bespoke apps: the framework carries the structure burden the bespoke app must build itself.
+
+### shinytest2: behavior as a test
+
+Unit tests cover `app/logic/` functions; `shinytest2` covers the app's *behavior* — the layer unit tests cannot see:
+
+```r
+library(shinytest2)
+
+test_that("AE table filters by treatment", {
+  app <- AppDriver$new("apps/ae_explorer/")
+  app$set_inputs(treatment = "Drug 10mg")
+  app$expect_values(output = "ae_table")
+})
+```
+
+Recorded expectations snapshot outputs; a failing suite localizes regressions to behavior, not just functions. The validation pattern: every requirement in the app's intended-use statement maps to at least one test name, and the suite runs in CI (part 10's pipeline hosts it like any other target).
+
+### Scale and safety patterns
+
+Three production patterns, each solving a named failure:
+
+```r
+# 1. Long compute → async (future/promises), so the UI never freezes
+future_promise({
+  heavy_bootstrap(adae)
+}) %...>% (\(result) output$dist <- renderPlot(plot(result)))
+
+# 2. Big data → backend filters, apps render views
+duckdb_sql <- "SELECT AEDECOD, COUNT(*) FROM adae WHERE TRTA = ?"
+# (DuckDB as the app's local analytical engine)
+
+# 3. Access control at the data connector, not the UI
+secure_dataset <- function(user) {
+  allowed_studies(user) |> (\(ids) filter(adsl, STUDYID %in% ids))()
+}
+```
+
+The pattern table for scale decisions:
+
+| Symptom | Pattern | First tool |
+|---|---|---|
+| UI freezes on compute | Async | `future` + `promises` |
+| Data too big for memory | Analytical backend | DuckDB / database views |
+| Many users, shared state | Session isolation, caching | `bindCache`, memoise |
+| Sensitive data, broad users | Access at connector | Auth-aware data layer |
+
+### The validation evidence file
+
+The artifact that closes the app's qualification — the same architecture as part 9's memo, extended to an interactive system:
+
+```markdown
+## Validation Evidence — ae_explorer v2.1 (indirect GxP)
+
+1. Intended use
+   ADAE review support, study ABC-123, outputs verified per QC-SOP-7.
+2. Structure & change control
+   rhino layout; Git repo, protected main; PR review rule.
+3. Testing evidence
+   Unit: 94% of app/logic/ functions; shinytest2: 23 scenarios; CI run #1041.
+4. Data & access
+   Connector-authenticated ADSL/ADAE views; no local PHI.
+5. Performance & availability
+   Load test at 25 concurrent; async report path verified.
+6. Anomalies & limits
+   Known: none open. Limits: study ABC-123 data model only.
+7. Release
+   Approved by (QA) / (Owner), date, requalification trigger:
+   R-Shiny stack major bump or intended-use change.
+```
+
+One file, one signature, one system — and the afternoon demo has become infrastructure.
+
+## The agentic way
+
+Agents draft Shiny faster than any artifact class in this series — and that is precisely why the structure above exists. The observed production pattern: agent-built apps pass syntax review trivially and fail evidence review completely, unless the scaffold enforces the division before generation starts. The shops with clean runs give agents a rhino skeleton and a module contract, then review PRs whose diff the tests already constrain. teal-based generation goes furthest: the agent composes declared modules over declared data, and the framework's structure *is* the guardrail.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents write credible Shiny UIs and reactive glue in minutes; the defect class is invisible: plausible reactive dependencies that pass demos and race in production. Automated tests are the only review that sees it.</p>
+  <p>Rule: an agent-authored app ships only through the same test gate a human-authored app faces — and its intended-use statement is human-written before generation begins.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-12-14. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Classify first: GxP depth follows intended use, and the table's three rows prevent both over- and under-building.
+- Structure is the audit interface: rhino's layout with logic in plain functions makes most of an app testable before Shiny tooling appears.
+- teal carries the exploration use-case; bespoke apps pay its structure costs themselves.
+- shinytest2 covers behavior where unit tests stop; requirements map to tests one-to-one in the evidence file.
+- Async, backend filtering, and connector-level access are named cures for named failures — reach for patterns, not heroics.
+
+## FAQ
+
+**How many tests is enough?**
+The mapping, not the count: every intended-use requirement has at least one named shinytest2 scenario, every exported app/logic/ function has unit coverage, and the evidence file's test section enumerates both. When the intended-use statement changes, the mapping tells you what new tests the release owes.
+
+**How often does requalification actually trigger?**
+In practice, two triggers dominate: a major version bump in the R-Shiny stack beneath the app, and any change to the intended-use statement — a new study, a new user population, a new decision the app informs. The evidence file's requalification line exists precisely so these events are mechanical rather than remembered; teams running the pattern report the calendar, not the crisis, because the triggers fire on version pins that part 10's lockfiles already track.
+
+**Can I deploy Shiny with Docker in a validated environment?**
+Yes — containerized Shiny (Connect, open-source server, or custom) is the standard pattern, and the container pairs naturally with part 9's qualification layer: image digest pinned in the evidence file, renv lockfile inside the image, one artifact to requalify on bump.
+
+**What about shinylive — serverless Shiny in the browser?**
+For the right slice (no sensitive data, self-contained computation), it removes the server from the validation scope entirely — the browser becomes the runtime. Expect its GxP footprint to grow as the toolchain matures; watch it for internal training and demo tiers today.
+
+**Does this apply to Python Shiny?**
+The framework transposed: rhino-equivalents and test tooling differ, but the five-things thesis — structure, tests, data design, performance, evidence — is language-agnostic, because it was never about R.
+
+**Next in the series:** the frontier — seven production cases of LLMs writing trial code, and the exact wall each one hit.
+
+## Exercises
+
+1. **Classify your apps.** Place every Shiny app your team runs on the three-row GxP table of this chapter. Defend each placement in one sentence an inspector would accept.
+2. **Extract the logic.** Take one app you maintain and move one calculation from a reactive expression into a plain function with a unit test. Note what became testable.
+3. **Requirement-to-test map.** For one app, write its intended-use statement as three bullets and name the shinytest2 scenario that covers each.
+
+## Case study: the demo that became a decision record
+
+A safety physician's meeting tool — built in an afternoon, loved immediately — drifted into adjudication support within a year, still with no tests, no structure, and one global dataframe. The reclassification exercise of this chapter is the prevention: when its use crossed into indirect GxP, the five-things build (rhino, tests, connector auth, async report path, evidence file) took two sprints — cheap, because it happened at the crossing, not at the inspection. Reconstruct the crossing point and the two builds on either side of it.

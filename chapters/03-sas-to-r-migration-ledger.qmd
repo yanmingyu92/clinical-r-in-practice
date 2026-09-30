@@ -1,0 +1,128 @@
+# The SAS-to-R Ledger: What Migrations Actually Cost
+
+The conference version of every migration story is the same: a company decided, a company trained, a company triumphed. The ledger version — the one that survives an audit committee — has entries nobody puts on slides: the year of training that produced almost no usage, the programmers who quietly produced R output by transliterating SAS habits, the dual-run budget that ate two validation regimes at once, the senior talent that plateaued because the second language arrived at the worst moment of their career.
+
+This part is the ledger. It is built from the public record of companies that shared their migration economics — enough of them now that the patterns repeat — and its purpose is to make your migration, or your assessment of one, boring and survivable.
+
+> **TL;DR** — Migrations fail on governance and learning curves, not syntax. The three real cost blocks are: training that does not transfer without project-embedded practice, a dual-stack period where every deliverable pays twice, and the hidden rework of transliterated SAS habits in R clothing. The companies that succeeded front-loaded the ecosystem (part 2), moved by portfolio not by decree, and treated the ledger as data — measuring adoption by outputs shipped, not people trained.
+
+## The fundamentals
+
+### Why syntax was never the problem
+
+Two facts frame every honest migration discussion:
+
+1. **SAS programmers learn R syntax in weeks.** The language is the easy layer; most of this series' readers are proof.
+2. **The working environment is what changes.** Statistical computing environments, package qualification, version control, reproducible pipelines — the R *world* carries engineering expectations the SAS *world* externalized to the platform vendor. The migration is from a managed platform to an engineered one.
+
+This is why "we trained everyone" is not an adoption result. Training teaches the easy layer; the hard layer only transfers when it is learned inside deliverables, under deadline, with review — the same "learning by doing" conclusion one large pharma reached publicly after training the large majority of its statistics function and watching usage stay far below expectation. Courses completed is a vanity metric; outputs shipped in the new stack is the only one that moves the ledger.
+
+### The ledger itself
+
+Every migration ledger converges on the same blocks. The numbers vary by company size; the structure does not:
+
+| Ledger block | What it really costs | Common underestimate |
+|---|---|---|
+| Training | Course delivery + the *productivity dip* while habits rebuild | Counting course completions as capability |
+| Dual-run | Two toolchains, two validation regimes, two support desks — for years | Budgeting it as a "transition quarter" |
+| Rework | Transliterated code (SAS logic in R syntax) that must be re-engineered later | Zero — always budgeted at zero |
+| Tooling & qualification | SCE rebuild, package validation, template development | The multi-year tail of part 9's costs |
+| Talent risk | Late-career disengagement; early-career acceleration | Treated as morale, not as cost |
+| Offset: licenses | SAS license reduction — usually staged, rarely immediate | Booking it on day one |
+
+Two asymmetries are worth naming. First, the costs are front-loaded and visible; the offsets are back-loaded and contested. Second, the biggest offset is usually not licenses at all — it is *capability*: pipeline automation (part 10), reproducibility, and the AI-assisted workflows of part 12, which attach poorly to a macro-library estate. Boards that approved migration on license savings alone have had awkward year-two conversations.
+
+### The adoption curve, honestly
+
+Public enterprise stories describe a curve with three phases, and knowing you are in phase one is half the survival strategy:
+
+- **Phase 1 — Enthusiasm ceiling.** Early adopters ship impressive pilots; the organization concludes migration is "just rollout." It is not; the pilot population is self-selected.
+- **Phase 2 — The plateau of habit.** The middle of the workforce runs the new language as the old language. Output exists; engineering does not. This phase is where migrations die, invisibly, because dashboards still show green.
+- **Phase 3 — Norm transfer.** A critical mass ships work in idiomatic R with the ecosystem's structures (templates, pipelines, review). Now — and only now — the dual-run tax can be retired.
+
+The managed exit from phase 2 is portfolio-by-portfolio, not company-wide decree: pick studies, not slogans.
+
+## The modern workflow
+
+### Measuring adoption like an engineer
+
+Replace "programmers trained" with a small set of output-anchored metrics, and the ledger becomes data:
+
+```r
+library(dplyr)
+
+# The only adoption dashboard that matters: what shipped, in what stack
+# (study_deliverables: internal deliverables tracker — illustrative input)
+outputs <- study_deliverables |>
+  filter(fiscal_year >= 2023) |>
+  count(fiscal_year, primary_language, wt = qc_hours, name = "qc_hours")
+
+outputs
+```
+
+Track three series over time: deliverables by primary language, QC hours by stack (transliterated R usually shows *higher* QC hours than SAS at first — that is the rework block becoming visible), and package-validation coverage (part 9) by study. When R's QC hours cross below its deliverables share, phase 3 has started.
+
+### The pilot that teaches
+
+The migration literature's strongest consensus is on pilot design. A useful pilot:
+
+| Design choice | Works | Fails |
+|---|---|---|
+| Study type | New study, greenfield, non-critical-path | Retrospective rewrite of a submitted study |
+| Team | Volunteer blend: one ecosystem-experienced lead + domain experts | The "best programmers" as a closed unit |
+| Tooling | Full stack from day one: template, pipeline, validation | Sandbox R without the SCE context |
+| Success criterion | Deliverable shipped + QC metrics comparable | "Code exists in R" |
+
+The retrospective-rewrite pilot is the classic trap: it optimizes for proving feasibility that is no longer in question, while teaching nothing about the phase-2 habits that actually decide the migration.
+
+### The individual ledger
+
+If you are a SAS programmer inside someone else's migration, the ledger has a personal page:
+
+- Your SAS knowledge does not devalue; the standards knowledge in your head (part 1) is the scarce asset, and it transfers completely.
+- Your risk is the plateau of habit. The programmers who thrived treated the ecosystem's structures — templates, Git-based review, pipelines — as the learning target, not the grammar.
+- The market already prices the transition: bilingual programmers command the premium in exactly the shops mid-migration, which is most of them.
+
+## The agentic way
+
+Migration is where AI assistance has been most aggressively marketed and most specifically overclaimed. The honest position, consistent with part 12's ledger: agents are excellent at *transliteration* — which is precisely the phase-2 failure mode you are trying to avoid. An agent will happily convert a SAS macro to syntactically valid R with none of the idiomatic structure that made the migration worth doing. The better use is the reverse: agents as explainers and reviewers, walking a programmer through why the R version differs, and flagging transliterated patterns in code review before they fossilize.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agent-assisted SAS→R conversion produces phase-2 output at phase-1 speed: fluent syntax carrying legacy logic. The migration's real goal — norm transfer — is exactly what the agent cannot supply.</p>
+  <p>Use agents to explain idioms and review translations; never let "it runs" close a migration ticket.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-10-19. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Migrations fail on governance and habit transfer, not syntax; training completion is a vanity metric, shipped outputs are the ledger.
+- Budget the dual-run tax honestly (years, not quarters) and book license savings when contracts actually allow.
+- The hidden block is rework: transliterated code is a debt you will service in phase 2 or pay down painfully in phase 3.
+- Pilot forward on new studies with the full stack; retrospective rewrites prove the wrong thing.
+- The biggest durable offset is capability — pipelines, reproducibility, AI-ready workflows — not licenses.
+
+## FAQ
+
+**Is SAS going away?**
+Not on any horizon worth planning against. The realistic end-state in most large shops is a long bilingual equilibrium with R as the strategic direction — which is precisely why bilingual programmers hold the premium and why the dual-run tax deserves respect.
+
+**How long does an enterprise migration take?**
+Public accounts describe the serious middle as three to five years, with the dual-stack period the dominant phase. Companies that compressed it did so by portfolio concentration — more studies in the new stack sooner — which raises peak cost and lowers total duration. Choose your risk profile explicitly.
+
+**What about the non-English effect — global teams?**
+The ecosystem's documentation is English-first, and global adoption (the APAC experience in particular) shows a real training asymmetry that doubles the habit plateau. Companies that succeeded invested in bilingual internal enablement material rather than assuming conference talks would suffice.
+
+**Should a small sponsor even bother?**
+Yes — differently. Small shops skip the dual-run tax by going R-native from incorporation, inheriting the ecosystem's qualification artifacts (part 9) instead of building them. The migration ledger is largely an enterprise problem; the greenfield ledger is short.
+
+**Next in the series:** [the ADaM workhorse — admiral's LEGO method for building analysis datasets one derivation brick at a time](/blog/admiral-adam-lego-method.html).
+
+## Exercises
+
+1. **Build the ledger for your shop.** Fill the six-block ledger table with your organization's real or planned numbers — including the rework row everyone budgets at zero. Total it honestly.
+2. **Design the pilot.** Given your portfolio, choose the study type, team composition, and success criterion for a migration pilot using the works/fails table. Defend each choice in one sentence.
+3. **Metric design.** Write the three-series adoption dashboard from this chapter as a mock: what exactly do "deliverables by language" and "QC hours by stack" look like in month 3, month 12, month 24?
+
+## Case study: the training that didn't take
+
+The public pattern from a large pharma: after a decision to make R primary for statistical reporting, the company trained the large majority of its statistics function — and usage stayed far below expectation, because courses completed is not capability. The recovery moved learning inside deliverables: study-embedded practice, review of real outputs, engineers sitting with teams. Reconstruct the miss with this chapter's vocabulary: which ledger block was misread, which phase was mistaken for the next, and what "learning by doing" costs when you budget it properly.

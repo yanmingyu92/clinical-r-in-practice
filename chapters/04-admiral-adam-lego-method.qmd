@@ -1,0 +1,170 @@
+# Building ADaM with admiral: The LEGO Method
+
+Every experienced ADaM programmer eventually has the same realization about their macro library: 90% of it does the same six things. Add a constant variable from another dataset. Derive a date with a documented imputation. Compute a duration. Flag a population. Pick an analysis record. Sequence the traceability keys. The 10% that differs is the study's actual science — and the 90% is where companies spent twenty years writing incompatible variations of the same functions.
+
+admiral — the ADaM in R Asset Library — is the industry's collective decision to build that 90% once, together (part 2), and to make each piece small, composable, and traceable. The method this part teaches is the LEGO method: derivations as bricks, datasets as builds, and company templates as the instruction booklets layered on top.
+
+> **TL;DR** — admiral replaces the shared 90% of every ADaM macro library with tested, composable `derive_*` functions that bake in traceability. You keep the science — the study-specific derivations — and assemble everything else from bricks. This part builds a working ADSL→BDS flow with real code, shows the brick taxonomy, and explains why your company template should wrap admiral rather than fork it.
+
+## The fundamentals
+
+### The brick taxonomy
+
+admiral's functions sort into a small taxonomy, and internalizing it is the whole learning curve:
+
+| Brick family | What it does | Canonical example |
+|---|---|---|
+| `derive_vars_merged()` | Pull columns from another dataset, one row per match | Treatment variables from EX into ADSL |
+| `derive_vars_dt()` / `derive_vars_dtm()` | Derive dates with explicit, documented imputation | `TRTSDT` from partial `TRTSDTC` |
+| `derive_vars_duration()` | Durations and time-to-event windows | `TRTDURD` |
+| `derive_var_extreme_flag()` | Flag a record per group (worst, first, last) | Baseline flag on VS |
+| `derive_param_*()` | Create analysis records (BDS) | `derive_param_map()` for mean arterial pressure |
+| `derive_var_obs_number()` / `derive_var_age_years()` | Sequencing and demographics math | Analysis-ready age |
+
+Two design commitments distinguish bricks from macros. First, **every brick speaks metadata**: keys (`by_vars`), ordering (`order`), and mode (`first`/`last`) are explicit arguments, never environment conventions. Second, **every brick emits traceability** — source sequence and domain variables attach automatically, because part 1's finding (untraceable values) is what the library exists to prevent.
+
+### ADSL and BDS are different builds
+
+The LEGO method respects the two ADaM structures differently:
+
+- **ADSL (one row per subject)** is mostly `derive_vars_merged()` — a series of joins bringing subject-level attributes to the subject spine, each join a brick.
+- **BDS (one row per parameter per analysis)** is mostly `derive_param_*()` and `derive_var_extreme_flag()` — creating analysis records and selecting the ones that matter, each creation a brick.
+
+OCCDS (occurrence data — AE, CM) rides in between: events stay event-shaped, with added analysis flags. The series template flow (`use_ad_template()`) gives each structure its own script, and bricks compose inside a script in pipeline order.
+
+## The modern workflow
+
+### Building an ADSL, brick by brick
+
+A realistic ADSL build, trimmed to the load-bearing bricks:
+
+```r
+library(admiral)
+library(dplyr)
+
+# The subject spine: demographics, as collected
+adsl <- dm %>%
+  derive_vars_merged(
+    dataset_add = ex,
+    filter_add = EXDOSE > 0 & !is.na(EXSTDTC),
+    by_vars     = exprs(STUDYID, USUBJID),
+    order       = exprs(EXSTDTC, EXSEQ),
+    mode        = "first",
+    new_vars    = exprs(TRTSDT = convert_dtc_to_dt(EXSTDTC))
+  ) %>%
+  derive_vars_merged(
+    dataset_add = ex,
+    filter_add = EXDOSE > 0,
+    by_vars     = exprs(STUDYID, USUBJID),
+    order       = exprs(EXENDTC, EXSEQ),
+    mode        = "last",
+    new_vars    = exprs(TRTEDT = convert_dtc_to_dt(EXENDTC))
+  ) %>%
+  derive_vars_duration(
+    new_var = TRTDURD,
+    start_date = TRTSDT,
+    end_date   = TRTEDT
+  ) %>%
+  derive_vars_duration(
+    new_var    = AAGE,
+    start_date = BRTHDT,
+    end_date   = TRTSDT,
+    out_unit   = "years",
+    add_one    = FALSE,
+    trunc_out  = TRUE
+  )
+```
+
+Read the shape, not the syntax: spine, then brick, brick, brick. Each join states its keys, its ordering, its tie-break mode. An inspector reading this code five years from now can reconstruct every decision — which is the property macros never delivered, because the decisions lived in 4,000 lines of shared macro prologue.
+
+### Building a BDS record
+
+The BDS pattern in miniature: derive mean arterial pressure from the systolic and diastolic records:
+
+```r
+advr <- advr %>%
+  derive_param_map(
+    by_vars       = exprs(STUDYID, USUBJID, AVISIT),
+    set_values_to = exprs(PARAMCD = "MAP"),
+    get_unit_expr = AVALU
+  )
+```
+
+One brick, one new analysis parameter, fully traceable to its parents. The equivalent macro is a week of someone's quarter — and a validation exhibit.
+
+### The company template question
+
+The most common enterprise pattern — and the correct one — is wrapping, not forking:
+
+| Layer | Owner | Contents |
+|---|---|---|
+| admiral bricks | The ecosystem | Tested derivations, traceability |
+| Company template | Your shop | Naming, script structure, QC hooks, spec bindings (part 5) |
+| Study code | The study team | The science: parameters, populations, endpoints |
+
+If your template reimplements a brick, you have re-entered the macro-maintenance business the industry collectively exited. The template's job is conventions and governance; the bricks' job is derivation; the study's job is truth.
+
+### Debugging like a builder
+
+The LEGO method's debugging discipline is isolation: pull a failing brick out of the pipeline and exercise it on its inputs.
+
+```r
+# When the full build misbehaves, bisect the bricks
+brick_check <- ex %>%
+  filter(EXDOSE > 0) %>%
+  arrange(USUBJID, EXSTDTC) %>%
+  group_by(USUBJID) %>%
+  slice(1) %>%
+  ungroup()   # reproduces what derive_vars_merged(mode = "first") should produce
+
+# Compare against the pipeline's output; the diff localizes the bug
+```
+
+Because bricks are pure functions of their arguments (no macro-environment globals), bisection always terminates at a specific brick and a specific argument — usually `order` or `filter_add`, the two arguments where business rules hide.
+
+## The agentic way
+
+admiral is among the best-validated targets in the industry for code assistance, precisely because its API is brick-shaped: agents draft joins and parameter derivations that are structurally correct, and the review burden collapses to the two arguments that carry judgment (`order`, `filter_add`) plus the SAP citation. The production pattern from part 12's ledger applies in full: agent drafts the brick sequence from the spec, human owns the ordering rules and the fallback conventions — the exact places where a plausible-looking imputation rule invents itself.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agent-drafted admiral pipelines are production-ready more often than any other artifact class in this series, with one systematic exception: imputation and fallback conventions. An agent will produce a clean log over an invented rule for a missing treatment date.</p>
+  <p>Rule: every date imputation and every fallback branch carries a SAP citation a human verified — before QC, not during it.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-10-26. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- 90% of every ADaM library is the same six bricks; admiral built them once, together, with traceability baked in.
+- Learn the taxonomy (`derive_vars_merged`, dates, durations, flags, params) — it *is* the learning curve.
+- ADSL builds are joins; BDS builds are parameter creation. Respect the structures; the template flow already does.
+- Wrap, never fork: company templates own conventions, bricks own derivations, studies own the science.
+- Debug by brick bisection; the bug is always in an `order` or a `filter_add` that encodes a rule nobody wrote down.
+
+## FAQ
+
+**Does admiral cover SDTM too?**
+The SDTM side is younger and building fast (part 1's map); admiral's core remains the ADaM layer, with the tabulation-side packages maturing through the same ecosystem governance. Watch the pharmaverse's data-in layer rather than waiting for admiral to absorb it.
+
+**How do I convince a reviewer unfamiliar with admiral?**
+Show them the layout, not the library: hand a reviewer the pipeline script next to the SAP paragraph it implements, and ask which decision they cannot reconstruct. The exercise usually ends the conversation in admiral's favor, because macro-based predecessors could not survive it — their decisions lived in environment conventions and prologue code rather than in explicit, ordered arguments on the page. The bricks' explicitness is not a style preference; it is the reviewability property that made the ecosystem adoptable in the first place.
+
+**What if my company's ADaM conventions differ from admiral's defaults?**
+They will, and the template layer is where the difference belongs. Conventions (names, script shapes, QC gates) wrap the bricks; you will only rarely need to argue with a brick's default, and when you do, the argument is usually a spec citation — which is the conversation admiral was designed to force.
+
+**How does admiral interact with metacore (part 5)?**
+Cleanly, by design: metacore supplies the spec (variables, labels, origins), and admiral supplies the derivations; the study pipeline reads both, with metatools and xportr enforcing the spec's metadata downstream. Part 5 assembles that whole chain.
+
+**Is admiral validated enough for submissions?**
+It is the most-validated open ADaM tooling in existence — multiple agency-facing submissions have shipped on it — but "the package is validated" is never the whole sentence in this industry: your usage, your spec, and your QC close the loop (part 9 builds that file).
+
+**Next in the series:** the metadata spine — metacore to xportr, where the spec becomes code and inconsistency dies at its source.
+
+## Exercises
+
+1. **Brick taxonomy drill.** For each derivation below, name the brick family before writing any code: (a) worst-value-per-visit flag, (b) treatment end date from exposure records, (c) an average-of-parameters record, (d) age at informed consent.
+2. **Build it.** Using the ADSL pattern from this chapter as a reference, write the brick sequence for TRT02SDT/TRT02EDT (second-line treatment) including the tie-break ordering you would defend.
+3. **Bisect a bug.** The chapter's debugging pattern: write the two-line reproduction of a `derive_vars_merged(mode = "first")` result that disagrees with expectations, and identify which argument encodes the business rule at fault.
+
+## Case study: the ordering nobody wrote down
+
+A phase 3 dataset's treatment start dates disagreed with QC's independent build for eleven subjects — all with two same-day doses. The primary program ordered by sequence number; QC ordered by administration time; the SAP said neither. The finding was not a code defect but a rule that existed in no artifact. Reconstruct the fix in this chapter's terms: where the rule now lives (the `order` argument), what documentation it cites, and how the brick made the rule visible for the first time.

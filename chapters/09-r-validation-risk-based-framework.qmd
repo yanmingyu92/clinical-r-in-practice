@@ -1,0 +1,140 @@
+# Risk-Based R Validation: Open Source Under Inspection
+
+The question that stops every pharma R adoption in its first meeting: "How do we validate open source?" The question behind the question is older than R: if a submission's numbers came from software nobody at your company wrote, who is accountable when an inspector asks? The industry's answer took a decade to build and is now stable enough to teach as engineering: risk-based validation. You do not validate packages the way you validate a chromatography system — you qualify them, with evidence, proportionate to the risk of what they touch.
+
+The framework this part teaches comes from the R Validation Hub — a working group of dozens of pharma and biotech companies — whose public method (white papers, the `riskmetric` package, the community risk-assessment application) has become the de facto industry standard. By the end you will have run a real assessment and drafted the qualification memo your QA actually wants.
+
+> **TL;DR** — Risk-based validation qualifies packages proportionate to their use: measure maintenance, testing, and community signals with riskmetric; judge the fit between package and intended use yourself; document both in a qualification record with a re-assessment date. This part runs the full loop on a real package and gives the memo template. The insight that unlocks everything: validation attaches to *usage*, not to software in the abstract.
+
+## The fundamentals
+
+### Why "validate the package" is the wrong sentence
+
+Two facts reframe the whole field:
+
+1. **You cannot validate software you don't own.** Validation, in the GxP sense, is demonstrating fitness *for your intended use under your control*. Open source is maintained upstream; what you own is the decision and its evidence.
+2. **Risk lives in the usage.** `stringr` used to format a label inside an internal memo and `mmrm` computing the primary endpoint's p-value share no validation logic whatsoever — same language, opposite ends of the risk spectrum.
+
+So the method is *qualification proportional to risk*: assess intrinsic package health once, judge usage-specific risk per study context, and document the pairing. An inspector's question "is R validated?" dissolves into a file of specific, dated, evidence-backed decisions.
+
+### The risk model
+
+The Hub's method scores packages across dimensions that any engineer recognizes as proxy measurements of one question — *will this keep working, and can we tell if it doesn't*:
+
+| Dimension | Signals | What it proxies |
+|---|---|---|
+| Maintenance | Release cadence, bug-report closure, repo activity | The bus factor problem |
+| Testing coverage | Coverage metrics, test runtime | Confidence in correctness |
+| Community | Download trends, vignettes, dependency health | Ecosystem support |
+| Documentation | Function docs, examples, site quality | Operability by your team |
+
+Two honest caveats belong in every memo: these are *proxies, not proofs* — a high score is not a warranty; and the scoring is deliberately mechanical so that two assessors reach the same number, while the *judgment* (does this package's risk profile fit this usage?) stays human, on the record.
+
+## The modern workflow
+
+### Running an assessment
+
+The mechanical half, in code:
+
+```r
+library(riskmetric)
+
+assessment <- c("admiral", "rtables", "cards") |>
+  pkg_ref() |>
+  pkg_assess()          # maintenance, community, testing signals
+
+scores <- pkg_score(assessment)
+scores
+```
+
+The community also runs the public risk-assessment application — a Shiny front end over exactly this machinery, publishing assessments of the CRAN ecosystem so shops start from shared baselines instead of private spreadsheets. Use it as the starting ledger; re-run your own when a version moves.
+
+### The qualification memo
+
+The judgment half, as a template that has survived inspection:
+
+```markdown
+## Package Qualification Record — {package} {version}
+
+1. Intended use
+   Study {id}, deliverable {TLF-14}: table layer rendering from ARD.
+   GxP impact: indirect (output independently verified per QC-SOP-7).
+
+2. Intrinsic assessment (riskmetric, dated {date})
+   Overall {score}; maintenance {…}; coverage {…}. Attached: raw output.
+
+3. Usage-specific risk
+   - Failure mode: layout defect; detection: shell diff in QC (part 6).
+   - Compensating controls: independent programming, ARD-vs-ARD join.
+
+4. Decision
+   Approved for stated use. Re-assess on major version bump or {date}.
+
+5. Evidence
+   riskmetric output, session-info, dependency lock (renv lockfile).
+```
+
+The memo's quiet genius is its *narrowness*: approval exists only for the stated use. The same package in the primary endpoint's path gets a different conversation, and the file says so.
+
+### The stack-level view
+
+One memo per package does not scale to a study; the qualification layer aggregates into a stack view — which is what part 2's due-diligence loop was training you for:
+
+| Stack layer | Packages | Qualification status | Next review |
+|---|---|---|---|
+| Derivation | admiral 1.x | Approved (study ABC-123) | On version bump |
+| Tables | rtables, cards | Approved (indirect use) | Quarterly |
+| Pipeline | targets, renv | Infrastructure SOP | Annual |
+
+Your SCE's package library (part 10 freezes it technically; this freezes it procedurally) carries this table, and an inspection walkthrough becomes a tour of a maintained control, not an archaeology dig.
+
+### What inspectors actually ask
+
+The recurring pattern, from the industry's accumulated inspection folklore: *who chose this software, on what evidence, for what use, and how do you know it still behaves?* Four questions, four artifacts — decision, evidence, scope, and monitoring. A maintained qualification layer answers all four in the time it takes to open the binder. The shops that struggle are not the ones using open source; they are the ones using *any* software without the four artifacts, which fails equally for commercial tools.
+
+## The agentic way
+
+The mechanical half of validation is agent-ready today: assembling assessment dossiers, drafting memo sections from riskmetric output, diffing package versions across releases, and maintaining the re-assessment calendar are all structured, verifiable tasks. The judgment half — usage risk, compensating-control adequacy, the approval decision — is where the method deliberately keeps a human signature. An agent-drafted memo with unexamined scores is worse than no memo: it launders a decision through the shape of evidence.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents assemble validation evidence flawlessly and never tire of the re-assessment calendar. The signature line is the point of the entire document.</p>
+  <p>Rule: agent may draft every section of the qualification record except the decision; the decision block carries a human name that was present for the reasoning.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-11-30. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Validation attaches to usage, not software: qualification proportional to risk is the industry's stable answer to open source under GxP.
+- riskmetric supplies the mechanical half (maintenance, testing, community proxies); the judgment half stays human and documented.
+- Write narrow memos: approval exists only for a stated use with compensating controls named.
+- Aggregate to a stack view with re-assessment dates; the SCE carries it both technically and procedurally.
+- Inspectors ask four questions — who, on what evidence, for what use, how monitored — and every shop without artifacts fails them with or without open source.
+
+## FAQ
+
+**How does the qualification layer survive a CRAN dependency cascade?**
+The scenario that worries every shop running open source: a dependency two levels down ships a major bump, and your qualified stack now differs from your installed stack. The mechanical answer combines this part with part 10's freezes: the renv lockfile is the qualification layer's *factual* anchor — memos reference exact versions, so a cascade cannot silently shift the stack — and the re-assessment calendar turns upstream churn into a scheduled diff rather than an ambush. Teams that pair the two artifacts report the same rhythm: upstream releases arrive, the lockfile holds, and the decision "upgrade this quarter or next" becomes a reviewable ticket with the cascade's riskmetric delta attached. That is the whole method in one sentence: nothing moves unless the evidence moves with it, and the evidence has a version number.
+
+**Does the risk score approve a package for me?**
+No — and the method is explicit that it must not. The score makes two assessors reach the same mechanical numbers; the approval decision is a judgment call the memo records. Shops that treated the score as a threshold later discovered they had outsourced accountability to an algorithm, which is the one stake regulators never accept.
+
+**What about base R and the tidyverse?**
+The same framework applies with adjusted proportionality: the foundation packages carry the industry's longest collective experience, and most shops' stack views list them under an infrastructure qualification reviewed annually rather than per-study memos. The principle survives: usage determines depth.
+
+**How do locked environments (renv, part 10) relate?**
+They are the technical twin of the qualification layer: the memo says "we decided," the lockfile says "we run exactly what we decided on." One without the other answers only half the inspector's fourth question.
+
+**Does this work for internal packages?**
+Yes, with the addition that internal packages also carry your own validation testing obligations — the framework happily hosts them, usually with *higher* expected evidence because you own the maintenance risk the score can only measure.
+
+**Next in the series:** the reproducibility engine — targets pipelines that make every decision in this series re-runnable on demand.
+
+## Exercises
+
+1. **Run an assessment.** Assess two packages with riskmetric — one foundation, one niche — and write the two-line summary for each: score, notable dimensions, follow-up question.
+2. **Write the memo.** Draft the qualification record from this chapter for a package you actually use, filling all seven sections with real content including the re-assessment trigger.
+3. **Stack view.** Assemble your current study's packages into the stack-view table with qualification status and next review. Any row without an owner is a finding.
+
+## Case study: the inspector's four questions
+
+A sponsor's first inspection with an open-source-heavy stack opened with exactly this chapter's four: who chose this software, on what evidence, for what use, how monitored. The sponsor answered from a maintained qualification layer in forty minutes — decision, memo, scope, calendar, all dated. The shops that struggle answer the same questions with anecdotes. Reconstruct the binder in both cases: what artifacts answer each question, and which of the four your shop would answer slowest today.

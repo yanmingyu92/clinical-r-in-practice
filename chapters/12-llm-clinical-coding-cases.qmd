@@ -1,0 +1,146 @@
+# LLMs Writing Trial Code: Production Cases, Real Limits
+
+Every vendor slide says AI now writes clinical code. Almost none of them say where it stopped. The useful knowledge — the kind that decides whether your team adopts an AI pair programmer next quarter — lives in the gap between the demo and the validation meeting, and that gap only shows up in production stories. So this part is a ledger, not a pitch: the recurring use-cases companies have actually run since 2024, what worked, and the precise wall each one hit.
+
+The walls rhyme. That is the finding. Across divergent companies, tools, and study types, the same four or five failure modes account for nearly everything that broke — and none of them are about code syntax.
+
+> **TL;DR** — LLM coding assistance in clinical programming works and ships: derivation drafting, QC comparison, spec reading, and code explanation are in production across teams, often cutting first-draft time by half or more. The walls are structural, never syntactic: invented conventions (plausible fallbacks nobody specified), provenance gaps (clean logs over unsourced decisions), context limits (protocol and SAP knowledge too long for any window), and verification economics (the QC you still owe). Teams that won treated the model as a junior programmer with excellent syntax and no accountability — and built the workflow around that exact profile.
+
+## The fundamentals
+
+### The case ledger, condensed
+
+The production use-cases that survived contact with validation, with their walls:
+
+| # | Case | What the model does | The wall it hit |
+|---|---|---|---|
+| 1 | ADaM derivation drafting | Writes `derive_vars_merged` bricks from spec text | Invents imputation fallbacks; clean code over unsourced rules |
+| 2 | Double-programming acceleration | Independent second implementation for QC diff | Converges on the same misreading of an ambiguous spec |
+| 3 | TLF shell interpretation | Reads shell, drafts table code (part 6 stack) | Chooses denominators confidently; counting-basis errors |
+| 4 | Spec/QC document drafting | Narrates methods sections, QC plans from ARD | Fluent prose asserting numbers it never computed |
+| 5 | Legacy code explanation | Explains SAS macros, proposes R translation | Transliteration (part 3's trap) dressed as migration |
+| 6 | Code review first pass | Flags risks in pull requests before humans | Overconfidence laundered as thoroughness |
+| 7 | Test generation | Drafts testthat suites from function contracts | Tests the implementation's behavior, including its bugs |
+
+Seven cases, four walls. The walls deserve their own table:
+
+| Wall | Mechanism | The tell |
+|---|---|---|
+| Invented conventions | Model fills unspecified gaps with plausible defaults | "First non-missing date" rules nobody wrote |
+| Provenance gaps | Output carries no citation trail | Confident cell, no SAP paragraph |
+| Context limits | Protocol/SAP knowledge exceeds any context window | Right code, wrong study design |
+| Verification economics | QC cost unchanged — the wall nobody budgets | Faster drafts, same review queue |
+
+### The economic frame
+
+Why did these cases ship while others stalled? The arithmetic of verification:
+
+- **Production case 1 succeeds** because admiral's bricks (part 4) constrain the output's shape, and the review surface collapses to two arguments.
+- **Production case 3 succeeds** when the ARD layer (part 7) makes the model's claims diffable data instead of pixels.
+- **Case 2 stalls** because "independent" is a *legal* property: two implementations sharing one model's prior mistakes are not independent, and validators know it.
+
+The rule the industry converged on: **AI drafts where the verification surface is mechanical, and never where it is judgmental.** Every successful case in the ledger sits behind a gate that was already mechanical before the model arrived — bricks, ARD joins, test suites. Every stalled case asked the model to enter through the judgment door.
+
+## The modern workflow
+
+### The pattern that works: drafting behind a structural gate
+
+A production pairing setup for derivation work — part 4's bricks as the guardrail:
+
+```r
+# The spec paragraph (human-authored):
+# "TRTSDT: first occurrence of EXSTDTC where EXDOSE > 0;
+#  missing if subject never dosed. Cite SAP §6.2."
+
+# pseudocode — illustrative orchestration pattern, not runnable code
+# The agent drafts against constrained vocabulary:
+draft <- llm_draft_derivation(
+  spec = sap_paragraph("6.2"),
+  brick_vocabulary = c("derive_vars_merged", "convert_dtc_to_dt"),
+  forbid = c("ifelse.*is.na")   # no silent fallbacks allowed through
+)
+
+# The gate: mechanical diff of draft vs. constraints, then human review
+# of exactly two arguments: order, filter_add.
+```
+
+The workflow's honesty is in `forbid` — the team enumerated its walls and made them lint rules. The model is not trusted to know the study; the study's constraints are compiled into the drafting environment.
+
+### The QC acceleration pattern
+
+The honest version of case 2 keeps independence real:
+
+```r
+# Human-written program (primary)
+# Agent-drafted program (secondary) — but from spec only, never from primary
+
+qc_diff <- compare_ard(
+  x = readRDS("pipeline/ard_primary.rds"),    # card objects from {cards}
+  y = readRDS("pipeline/ard_secondary.rds")
+)
+exceptions <- qc_diff$comparison$stat  # rows where the 'stat' column differs
+```
+
+(`compare_ard()` is experimental and currently lives on the GitHub main branch of pharmaverse/cards, not yet on CRAN.)
+
+The agent's draft qualifies as an independent implementation **only** because it was generated from the spec alone, with the primary program withheld — a workflow constraint, enforced by pipeline design (part 10), not by hope. The exceptions list is what the human reviews; it is short, specific, and mechanically complete.
+
+### What teams actually measured
+
+The production metrics that justified adoption, across the ledger's cases:
+
+| Metric | Observed effect |
+|---|---|
+| First-draft time (derivations, tables) | Down by half or more |
+| QC exception count | Unchanged — by design, not defect |
+| Reviewer hours per program | Slightly down (structured drafts read faster) |
+| Convention defects found in review | The signal to watch — invented-rule rate drops as constraints accumulate |
+
+The maturity indicator is the last row: teams keep a **constraint ledger** — every invented convention caught in review becomes a lint rule or a drafting constraint, and the same wall never gets hit twice. That ledger, not model choice, is what separates the year-two successes from the stalled pilots.
+
+## The agentic way
+
+This part *is* the agentic way — so its closing note is about the next two parts. The ledger's cases all keep a human trigger at execution; the frontier (part 13) removes the human from loop steps under protocol constraints, and the discipline this part builds is what makes that survivable. The one-sentence summary of two years of production experience: **the model's fluency is not the capability; the verification surface is.** Teams that invested in the surface (bricks, ARD, pipelines, constraint ledgers) got the productivity. Teams that invested in prompts got demos.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Every wall in the ledger is a missing constraint, not a missing model. Invented conventions, silent fallbacks, and denominator choices are all the same failure: the study's judgment was never encoded where the drafting happens.</p>
+  <p>Rule: when review catches an invented convention, it becomes machine-enforced before the next draft — the constraint ledger is the team's actual AI asset.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-12-21. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Seven production use-cases ship today; their walls are structural (invented conventions, provenance, context, verification economics), never syntax.
+- AI drafts behind mechanical gates: bricks, ARD joins, test suites — and never through the judgment door.
+- Independence in QC is a workflow property: spec-only generation, enforced by pipeline design.
+- The metrics repeat across teams: draft time halves, QC stays constant by design, and the invented-rule rate is the health metric.
+- The constraint ledger — not the model — is the durable asset; each wall, once hit, becomes machine-enforced.
+
+## FAQ
+
+**How do we start next quarter, concretely?**
+Pick the case with the narrowest verification surface — derivation drafting on one well-specced domain — and run it as a measured pilot: baseline draft times for two sprints, agent-assisted for two more, exceptions logged throughout. Publish the constraint ledger from day one, even empty; its existence changes reviewer behavior, because the review question shifts from "can we trust this" to "which constraints are missing." The pilots that generalized started exactly this small; the ones that stalled began with the shell library and drowned in typography.
+
+**Which model should we use?**
+The wrong question, mostly: the ledger shows identical walls across model generations. Choose by data governance (where prompts may travel) and by integration with your environment; then invest the difference in constraints — where the actual productivity lives.
+
+**Does AI-written code pass inspection?**
+The inspection sees what it always sees: programs, evidence, and decisions. AI-drafted code passes when it carries the same traceability as human code — and fails exactly when the provenance chain has a model in it wearing no badge. The workflow designs the badge.
+
+**What about proprietary data leaking through prompts?**
+The governance layer solved this before the coding layer cared: validated environments run local or approved-endpoint models, and the pipeline (part 10) routes drafting calls the same way it routes any other validated dependency. Case 1 ships inside those rails daily.
+
+**Will the walls fall as models improve?**
+Two will (context limits, some convention invention). Two are not model problems at all: verification economics is a budget fact, and provenance is an accountability requirement that better fluency makes *more* dangerous, not less. Plan around the durable walls.
+
+**Next in the series:** agents and MCP — what changes when the model stops drafting code and starts running workflows.
+
+## Exercises
+
+1. **Ledger your own case.** Pick one task your team might hand to an assistant this quarter. Fill the ledger columns: task, model role, human gate, failure mode from this chapter's wall table.
+2. **Constraint inventory.** List your shop's five most-repeated review catches. Write each as a lint rule or drafting constraint — the constraint-ledger entry this chapter says is the real asset.
+3. **Design the independent draft.** For one QC target, write the workflow that keeps an agent draft genuinely independent: what it sees, what it never sees, what the comparison artifact is.
+
+## Case study: the plausible fallback
+
+A first-draft derivation passed three reviews: correct bricks, correct keys, correct ordering. QC's independent build disagreed on nine subjects — every one with a missing treatment date, where the agent had applied a "carry previous visit forward" convention nobody had specified and no document supported. Fluent, clean, and invented. Reconstruct the remediation in this chapter's terms: the convention added to the constraint ledger, the drafting rule that forbids silent fallbacks, and the review surface that now catches the class in seconds.

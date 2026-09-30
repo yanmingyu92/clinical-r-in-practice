@@ -1,0 +1,125 @@
+# From Natural Language to CDISC Datasets
+
+The demo everyone has now seen: someone types "build me the ADAE for this study" into a text box, and reasonable-looking SDTM-to-ADaM code appears; a sentence becomes a working exploration app; a whole slide deck assembles itself around a dataset. The demonstration era of natural-language clinical programming is over — these things *work*. The interesting question has moved: how much of the distance between the demo and a submission does technology still own, and how much of it never belonged to technology at all?
+
+This part takes the question seriously by splitting it honestly. The distance to the fully automatic submission has two kinds of miles: technical miles, which are falling fast, and accountability miles, which do not move when the model improves. Confusing the two is how teams either over-invest in demos or under-invest in automation. The industry's honest position, assembled from the production evidence of parts 12–13: the technical miles are mostly behind us for the middle of the pipeline; the accountability miles — and one genuinely hard data problem — are the journey.
+
+> **TL;DR** — NL-to-CDISC works at the layer you would expect: spec-grounded drafting of derivations, app scaffolds, and document assembly are production patterns, because they sit behind mechanical verification (parts 4-10). The remaining distance splits into a hard technical mile — source data messiness, upstream of every standard — and the accountability miles: provenance, validation, and release gates that no fluency shortens. The fully automatic submission is arriving the way automation always arrives in regulated work: from the middle outward, with humans holding both ends.
+
+## The fundamentals
+
+### Two kinds of miles
+
+Every "we're 90% there" claim about automatic submissions mixes these:
+
+| Mile type | Example | Trend |
+|---|---|---|
+| Technical | Drafting derivations from spec; generating apps; assembling decks | Falling fast — parts 12-13's evidence |
+| Accountability | Who decided this imputation; who released this package; who answers in two years | Flat — by design, not by lag |
+
+The accountability miles are flat because they are the point, not the friction. A regulator's question "who owns this number" has no model-weight parameter; it has an org chart and a signature. The industry's entire validation architecture (parts 9-11) exists to make that question answerable — and every successful automation in this series *strengthened* the answer rather than routing around it.
+
+### Where NL actually enters the pipeline
+
+Natural language enters clinical programming where language already was — and the pipeline, mapped honestly, is mostly language artifacts:
+
+| Pipeline stage | Language artifact | NL automation status |
+|---|---|---|
+| Spec → derivations | SAP paragraphs, mapping specs | Production (part 12, case 1) |
+| Data → exploration | Study questions, review goals | Production pilots (teal generation) |
+| Results → documents | Narration, CSR prose, decks | Production (parts 8, 12) |
+| Source → SDTM | Clinic reality: sites, EDC quirks, free text | The hard technical mile |
+| Package → submission | Release decisions, attestations | The accountability miles |
+
+The pattern is exact: **automation conquered the stages that were already text-in/text-out, and stalls at the two boundaries where the world enters the pipeline and where the pipeline enters the record.** The middle was always going to fall first; the middle was made of language.
+
+## The modern workflow
+
+### The working middle, in practice
+
+The production shape of NL-to-derivation — spec-grounded, registry-exposed, evidence-gated, assembled from this series' parts:
+
+```r
+# Pseudocode: an illustrative agent interface — agent_run() is not a real
+# package function; the verbs below name capabilities assembled from this
+# series' tools, not a runnable API.
+# The interface: a study question in, an auditable workflow out
+agent_run(
+  goal = "Build the ADAE for ABC-123 per SAP §12 and QC it",
+  grounding = c(sap = "sap://12", spec = "specs/define.xml"),
+  tools = c("draft_derivation", "pipeline_run", "ard_diff"),
+  gate = "human_review"       # non-negotiable: the release token
+)
+```
+
+Underneath: part 4's bricks constrain the draft, part 5's spec binds metadata, part 10's pipeline executes, part 7's ARD diff produces the evidence, part 13's registry scopes every call. Nothing in that sentence is speculative; each verb ships somewhere today. What does not exist, anywhere, is the version without the gate — and that absence is the finding.
+
+### The app-generation tier
+
+The most mature NL tier after derivations: "describe the review tool, receive a working app." The production pattern inherits part 11 wholesale — generation composes *declared modules* (teal's contract) over *declared data*, and the evidence file's seven sections apply unmodified:
+
+```r
+# Pseudocode: illustrative composition pattern — llm_compose(), teal_registry()
+# and cdisc_contract() are invented helpers. The real teal API this pattern
+# stands for is init(modules = module(...), data = teal.data::cdisc_data(...)).
+# From a study question to a governed module composition
+app_spec <- llm_compose(
+  question = "Let reviewers see AE counts by SOC/PT, filtered by treatment",
+  modules = teal_registry(),        # declared, validated building blocks
+  data = cdisc_contract("ADSL", "ADAE")
+)
+# Output: a composition of existing, qualified modules — not novel code
+```
+
+The trick that makes this tier safe is that it is not code generation at all — it is *composition over a qualified catalog*, the Shiny equivalent of part 4's LEGO method. Novel-code generation from prose remains demo-tier; composition is production-tier. The distinction generalizes across every NL frontier in this series.
+
+### The hard technical mile, honestly named
+
+Upstream of every standard is the clinic: free-text narratives, site-specific data-entry cultures, legacy EDC exports, PDFs. Source-to-SDTM is where "natural language" stops meaning English and starts meaning *the world* — and where models still lose to domain experts with mapping judgment. Progress is real (metadata-driven mapping, part 5's philosophy pushed earlier in the flow) but the mile is genuine: it is not a language gap but a knowledge gap, and knowledge gaps close by encoding, not by scale. Every mapping decision a model gets right today is one an expert encoded into a spec yesterday — which is the constraint ledger of part 12, wearing source data.
+
+## The agentic way
+
+This part closes the series' agentic arc with its cleanest statement. Parts 12 and 13 found the same fact from two directions: the model's fluency is never the capability; the verification surface is. NL-to-CDISC is that fact at pipeline scale — the automatic submission will arrive exactly as fast as the *accountability surface* automates, and no faster. The teams to watch are not the ones with the best prompts; they are the ones whose specs, registries, ARDs, and gates are ready for a second audience. The future of clinical programming is not a text box that ships submissions. It is a pipeline this series has already built, with a very fast, very literal new colleague who drafts beautifully and signs nothing.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — The fully automatic submission is blocked not by intelligence but by attestation: the signature chain from number to name. Every component of that chain can now be drafted, diffed, and assembled by machines — and the chain itself is the deliverable humans kept.</p>
+  <p>Rule: automate the middle outward, hold both ends, and let the model meet the spec — never the record.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2027-01-04. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Two kinds of miles: technical (falling fast) and accountability (flat by design); every "90% there" claim should say which it is counting.
+- The automated middle is production reality — derivations, app composition, document assembly — because those stages were language-in, language-out behind mechanical gates.
+- App generation is safe as composition over qualified catalogs (part 11's contract), never as novel-code generation.
+- The hard technical mile is source-to-SDTM: a knowledge gap that closes by encoding, not by scale.
+- The automatic submission arrives from the middle outward; the signature chain is the deliverable humans keep.
+
+## FAQ
+
+**What is the single most useful thing to automate first?**
+Spec-to-first-draft derivation (part 12's case 1) — it has the shortest path from automation to verified output, and every convention encoded along the way becomes reusable surface for everything later in this part.
+
+**Will natural language replace statistical programming as a job?**
+The language part of the job — reading specs into code — is compressing exactly as part 12 measured. The judgment parts (conventions, boundaries, accountability) are the parts that were never typing. The role is becoming what senior programmers always said it was: specification and verification, now with a much faster first draft.
+
+**Are any agencies actually reviewing machine-drafted packages?**
+They review *evidence-complete* packages, and increasingly expect machine-readable artifacts (part 7's direction). What no agency reviews favorably is provenance that dead-ends in a model — the accountability mile again. The regulatory direction (structured review, Dataset-JSON, ARD-style results) is what *enables* automation, not what resists it.
+
+**What should my team build this year to be ready?**
+The same three assets this series kept converging on: machine-readable specs (part 5), ARD as the results substrate (part 7), and scoped execution with run logs (parts 10, 13). Every one of them pays for itself with zero AI — the frontier compounds them.
+
+**Is there a compliance red line I should draw today?**
+One, and it is bright: no artifact enters the submission record whose provenance chain does not terminate at a named human decision. Draw it, publish it, and let automation grow right up to it — that boundary is where every credible roadmap in this series already stands.
+
+**Next in the series:** the finale — the next five years of clinical data science, and the book this series becomes.
+
+## Exercises
+
+1. **Split your miles.** Take your shop's automation wishlist and sort every item into technical miles versus accountability miles using this chapter's two tables. Re-total the roadmap honestly.
+2. **Composition, not generation.** Identify one app request from your users that composition over a qualified catalog (teal modules, this chapter's pattern) could serve today. Write the catalog entry it needs.
+3. **Draw the red line.** Draft your organization's provenance rule in one sentence — the boundary no artifact crosses — and name the three workflow points where it is enforced.
+
+## Case study: the ninety percent that wasn't
+
+A vendor promised a sponsor an "almost automatic" submission pipeline. The demonstration was genuine — and it was all middle: spec-grounded derivations, assembled documents, generated QC diffs. The remaining distance was the two boundary miles this chapter names: source messiness upstream, attestation downstream. Eighteen months later, the honest retrospective priced the project exactly as this chapter's tables predict. Reconstruct the pitch, the parts that were real, and the two invoices nobody had modeled.

@@ -1,0 +1,183 @@
+# Metadata-Driven Development: metacore to xportr
+
+Somewhere in every shop there is a spreadsheet that everyone trusts and no one has fully read: the analysis dataset specification. Labels drift from the define, lengths drift from the spec, one team's copy is a week stale, and QC discovers the drift at the worst possible moment — during review, or worse, after the package ships. The industry's answer to the spreadsheet is the oldest idea in software: make the source of truth machine-readable, and derive everything else from it.
+
+That is the entire thesis of the metadata-driven layer of the pharmaverse: `metacore` reads (or builds) the spec; `metatools` checks your datasets against it; `xportr` applies it on the way out to transport files. One spec in, consistent metadata everywhere — inconsistency dies at its source instead of in your QC cycle.
+
+> **TL;DR** — The metacore-to-xportr chain turns the analysis spec into the pipeline's executable backbone: labels, lengths, types, ordering, and controlled terminology all flow from one object to every dataset, every check, and every exported file. This part builds the chain end-to-end with runnable code, shows where Dataset-JSON fits, and gives the migration path for spreadsheet-spec shops.
+
+## The fundamentals
+
+### What "the spec" formally contains
+
+The metadata-driven approach starts by recognizing the spec is not one thing but four, and each has a mechanical consumer:
+
+| Spec component | Example | Enforced by | Catches |
+|---|---|---|---|
+| Variable inventory | "ADSL contains TRT01P, label 'Planned Treatment'" | `metacore` object, `metatools::check_variables()` | Missing or invented variables |
+| Attributes | Type, length, label, format | `xportr_label`, `xportr_type` | Drift between define and data |
+| Controlled terminology | `TRT01P ∈ {Placebo, Drug 10mg, …}` | `metatools::check_ct_data()` | Rogue values |
+| Origin & derivation | "TRTSDT: derived from EX, first dose" | Documentation + part 4 bricks | Traceability gaps |
+
+The spreadsheet era failed not because people were careless but because the spec's four components had four different stale copies. The chain's promise is singular: one object, loaded once, every consumer downstream.
+
+### Why this layer matters more than it looks
+
+Two industry facts make this layer the quiet workhorse of the ecosystem:
+
+1. **define.xml is machine-readable.** The regulatory artifact at the end of the pipeline is itself structured metadata — which means the spec-to-define relationship can be *round-tripped*: read the define into metacore, and the metacore object becomes the single source of truth from which the define is generated. Shops that do one direction manually and the other with tooling eventually ship the mismatch.
+2. **xpt's constraints are spec constraints.** Variable-name length, label length, numeric types, dataset naming — the transport format's limits are exactly where label drift surfaces. Applying metadata at export time (not at QC time) moves the check from discovery to prevention.
+
+## The modern workflow
+
+### Building the metacore object
+
+The chain's entry point, in its two idioms — read a spec, or define one in code:
+
+```r
+library(metacore)
+
+# Idiom 1: read the define.xml your shop already maintains
+mc <- define_to_metacore("specs/define.xml")
+# (an Excel/Pinnacle-21 spec would use spec_to_metacore("specs/spec.xlsx"))
+
+# Idiom 2: define the spec programmatically (greenfield studies)
+# metacore() takes the spec as seven tibbles, assembled upstream
+mc <- metacore(
+  ds_spec     = ds_spec,     # dataset, structure, label
+  ds_vars     = ds_vars,     # per-dataset variable inventory
+  var_spec    = var_spec,    # shared variable attributes
+  value_spec  = value_spec,  # value-level metadata
+  derivations = derivations,
+  codelist    = codelist
+)
+
+mc
+# (illustrative output)
+#> A metacore object with:
+#>   ds_spec: 6 datasets
+#>   ds_vars: 412 variables
+#>   var_spec: 388 unique variables
+#>   value_spec: 1,902 value-level entries
+#>   derivations: 240
+```
+
+One object now holds the entire study's contract. Every function downstream takes `mc` as an argument; no function re-reads a spreadsheet.
+
+### Checking data against the spec
+
+`metatools` turns the spec into assertions — the QC you would have written, generated:
+
+```r
+library(metatools)
+
+# Do the datasets match the inventory?
+check_variables(adsl, mc |> select_dataset("ADSL"))
+
+# Do labels agree across the spec itself?
+metacore::check_inconsistent_labels(mc)
+# labels are enforced on the data at export time via xportr_label()
+
+# Is controlled terminology clean?
+check_ct_data(adsl, mc |> select_dataset("ADSL"))
+```
+
+Each check fails loudly and specifically — variable, expectation, actual — which is the difference between a metadata gate and a QC finding three weeks later. Shops wiring this into part 10's pipelines run these as targets nodes, so a metadata regression fails the build, not the review.
+
+### Applying metadata on the way out
+
+`xportr` completes the chain at export time, applying the spec's attributes in a fixed, inspectable order:
+
+```r
+library(xportr)
+
+adsl_out <- adsl |>
+  xportr_metadata(mc, domain = "ADSL") |>
+  xportr_type() |>          # coerce types to spec
+  xportr_length() |>        # apply lengths
+  xportr_label() |>         # apply labels
+  xportr_order() |>         # variable order to spec
+  xportr_write("submission/5.3/adsl.xpt")
+```
+
+The pipeline reads top to bottom as policy: type, length, label, order, write. The define and the data cannot drift, because they share a parent.
+
+### Where Dataset-JSON fits
+
+Part 1 introduced Dataset-JSON as the emerging transport sibling of xpt. The metadata chain makes the two formats *outputs of the same spec*, which is the whole point:
+
+```r
+library(datasetjson)
+
+# Same object, same metadata, second transport target
+adsl_dsjson <- adsl |>
+  xportr_metadata(mc, domain = "ADSL") |>
+  dataset_json(
+    item_oid      = "IG.ADSL",
+    name          = "ADSL",
+    dataset_label = "Subject-Level Analysis Dataset",
+    columns       = adsl_items   # variable metadata df (itemOID/name/label/dataType), built from the spec
+  )
+write_dataset_json(adsl_dsjson, file = "submission/5.3/adsl.json")
+```
+
+A submission team that keeps xpt as primary and pilots JSON in parallel inherits spec consistency for free — no second metadata regime, no second drift surface.
+
+### The spreadsheet migration path
+
+Shops starting from Excel specs do not need a big-bang rewrite; the working migration pattern is incremental:
+
+| Stage | Spec source | Effort | Payoff |
+|---|---|---|---|
+| 1 | Excel, read by metacore loaders | Days | One parse; checks available |
+| 2 | Excel exported to define; both loaded, diffed | Weeks | Drift becomes visible |
+| 3 | Spec defined in code; define generated | Months | Single source, round-trip closed |
+
+The trap to avoid is stage-two permanence: two readable sources that "mostly agree" is the spreadsheet era with better tooling. The chain pays off when one side is generated from the other.
+
+## The agentic way
+
+Metadata is the layer where LLM assistance is safest and most productive, because the artifacts are structured and the checks are mechanical: agents convert legacy specs into metacore definitions fluently, draft define documentation prose from the object, and — in part 12's pattern — generate the check reports humans sign. The frontier risk is different here: an agent asked to "fix" a failing metadata check will cheerfully edit the *data* to match the spec or the *spec* to match the data, with equal confidence. The decision of which side is wrong is a governance act.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents excel at spec ingestion, format conversion (Excel→metacore, define→documentation), and check-report drafting. The failure mode is resolution asymmetry: when data and spec disagree, the agent fixes whichever side you mentioned last.</p>
+  <p>Rule: a metadata conflict is escalated to a human with both artifacts; agents may diagnose, never adjudicate.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-11-02. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- The spec has four components (inventory, attributes, CT, origin); the chain gives each a mechanical consumer from one metacore object.
+- Checks belong at build time (metatools), attributes at export time (xportr) — prevention beats QC discovery at every stage.
+- define.xml round-trips: generate one side from the other, or drift forever between two readable sources.
+- Dataset-JSON and xpt are two outputs of one spec; the chain is what makes multi-format submissions cheap.
+- Migrate spreadsheets incrementally, but never stop at two sources that "mostly agree."
+
+## FAQ
+
+**How does the chain behave across data cuts and study amendments?**
+This is where the single-source property quietly pays twice. A data cut changes inputs, not contract: the metacore object is untouched, metatools re-asserts the same invariants, and the pipeline (part 10) rebuilds only data downstream. An amendment is the reverse — contract changes, data unchanged — and the chain surfaces its blast radius as failing checks before any program reruns: a renamed variable fails `check_variables` across every dataset that consumes it, with the failing datasets enumerated rather than discovered. Teams running amendments through the chain describe the same experience: the spec diff becomes the worklist, and nothing that should have been touched gets missed because the spec is the only thing anything else reads.
+
+**Does this replace my QC process?**
+It replaces the *metadata* portion of QC — the checks that should never have been findings. Analysis QC (independent programming, part 1's ritual) remains untouched; you just stop spending it on label drift.
+
+**Can metacore read my existing Excel spec?**
+Yes, via the standard loaders — the spec format it expects is the one most shops already produce for define generation. Stage one of the migration path is usually a day's work, which is deliberate ecosystem design.
+
+**What about SDTM-side specs?**
+The same philosophy applies earlier in the flow (part 1's map): tabulation-side tooling reads the SDTM spec and drives mapping checks the same way. The architecture — one spec object, mechanical consumers — is identical; the packages differ.
+
+**Who maintains the spec object in production?**
+The study team's specification lead, under the company template's governance (part 4). The object lives in the study package next to the derivations — versioned, reviewed, and diffed by the pipeline exactly like code.
+
+**Next in the series:** the reporting engine — rtables, gt/gtsummary, and flextable in a regulatory showdown, one AE table built three ways.
+
+## Exercises
+
+1. **Load a spec.** If your shop has a define.xml or Excel spec, load it into metacore and print the object's inventory (datasets, variables, value-level entries). Any parse failure is your first finding.
+2. **Generate your checks.** Run the three metatools checks on one dataset and classify every failure as inventory drift, attribute drift, or terminology drift — this chapter's table tells you which team owns each.
+3. **Amendment rehearsal.** Add one variable to the spec object and run the pipeline of this chapter conceptually: list every check that fails and every downstream artifact that rebuilds.
+
+## Case study: the define that lied
+
+A submission package shipped with define.xml labels matching the spec — and neither matching the data: label lengths silently truncated at export, caught by an agency reviewer. The remediation built this chapter's chain with the export-time application (`xportr_label`) and stage-two migration (Excel and define both loaded, diffed weekly) as the interim control. Reconstruct the incident's mechanics: which of the four spec components failed, which consumer should have caught it, and what the one-source architecture deletes from the failure surface.

@@ -1,0 +1,143 @@
+# Agents and MCP in the R Clinical Stack
+
+Part 12's assistants waited for prompts. Agents don't. An agent is a model given a goal, a toolkit, and a loop: plan a step, call a tool, read the result, decide the next step. The moment you give such a loop access to clinical artifacts — datasets, specs, pipelines, QC reports — every part of this series suddenly has a second audience, and it never sleeps. The industry's newest protocol, MCP, is what makes that audience legible: a standard way to expose tools to models, so a pipeline step, a package, or a Shiny app can declare what it offers and what it costs to call.
+
+This part is the frontier map: how MCP works, what the R ecosystem's MCP story is, what an agent-native clinical workflow actually looks like in production pilots — and the guardrail pattern that decides whether your agents are infrastructure or incidents.
+
+> **TL;DR** — Agents change the unit of work from a drafted artifact to an executed workflow: the model plans, calls tools (datasets, targets pipelines, ARD comparisons), and iterates. MCP standardizes the tool boundary so clinical systems can expose capabilities safely. The production pattern is unchanged from part 12 — autonomy is granted where verification stays mechanical — now enforced with protocol-level constructs: scoped tools, read/write separation, and run logs that terminate at a human-approved commit. Built this way, agents compress part 10's pipelines from hours to minutes and make provenance *more* explicit, not less.
+
+## The fundamentals
+
+### What MCP actually standardizes
+
+The Model Context Protocol is deliberately boring — which is its strength. A server (anything: a pipeline, a database view, a teal module registry) declares **tools** (callable actions), **resources** (readable context), and **prompts** (guided workflows). A client (an agent runtime, an IDE, a Shiny app with an AI panel) discovers those declarations and calls them over a standard transport:
+
+| MCP construct | Clinical example | Why it matters |
+|---|---|---|
+| Tool: `run_pipeline` | `tar_make()` behind scope + auth | Execution becomes a declared, rate-limited capability |
+| Tool: `read_ard` | Query a cards object by group/stat | Results access without raw-data exposure |
+| Resource: `sap://6.2` | The spec paragraph as context | Grounding documents become addressable |
+| Tool: `diff_ard` | The part 7 join, exposed | QC becomes agent-callable *evidence* |
+
+The protocol's gift is not the plumbing; it is that **capabilities become enumerable**. "What can the agent touch?" stops being an architecture diagram and becomes a registry you can print — the sentence an inspector and a security review can both read.
+
+### Why agents are not just better chat
+
+The leap from part 12's assistants to agents is the loop, and the loop changes the economics:
+
+| Property | Assistant (part 12) | Agent (this part) |
+|---|---|---|
+| Trigger | Human prompts each step | Human approves goal; loop iterates |
+| State | One context window | External memory: run logs, artifacts |
+| Tools | Output text you paste | Call systems through declared interfaces |
+| Failure mode | A wrong draft you review | A wrong action already taken |
+
+The last row is the entire governance problem in one line — and why everything this part builds aims at one property: **wrong actions must be cheap to prevent and expensive to hide.**
+
+## The modern workflow
+
+### An MCP server around a clinical pipeline
+
+The R ecosystem's MCP story is maturing fast; the pattern, however, is stable. A minimal server exposing part 10's pipeline with the right scopes:
+
+```r
+# Pseudocode of the production pattern — every tool declares its blast radius
+server <- mcptools_server("clinical-pipeline") |>
+  register_resource(
+    id = "sap",
+    read = function(section) sap_paragraph(section)      # grounding first
+  ) |>
+  register_tool(
+    id = "pipeline_status",
+    call = function() targets::tar_outdated()            # read-only: always grant
+  ) |>
+  register_tool(
+    id = "pipeline_run",
+    scope = "write",                                     # gated: human-approved runs
+    call = function() targets::tar_make()
+  ) |>
+  register_tool(
+    id = "ard_diff",
+    call = function(a, b) compare_ard(a, b)              # mechanical evidence
+  )
+```
+
+Three design rules, each mapping to part 12's walls: **grounding before tools** (the SAP is an addressable resource, so conventions stop being invented), **reads free, writes gated** (status and diffs always; execution never without a human token), and **evidence as first-class tools** (the agent can *show* the join that proves its work).
+
+### An agent workflow in production miniature
+
+The pilot that teams actually run — a data-cut impact review, autonomous up to the audit line:
+
+```markdown
+Goal: Assess impact of the 2026-12-28 data cut on study ABC-123.
+
+Agent plan (from the tool registry):
+1. pipeline_status()        → 4 stale targets identified
+2. read sap://12            → safety chapter requirements grounded
+3. pipeline_run()           → [HUMAN TOKEN] cut applied, 4 targets rebuilt
+4. ard_diff(old, new)       → 2 exceptions, both in AE table 14
+5. Draft chapter memo from exceptions → posts as pull request
+
+Termination: PR #412 awaits human review. No artifact ships unreviewed.
+```
+
+Minutes, not the afternoon of part 10's manual equivalent — and the run log *is* the audit trail: every step a declared tool call, every write carrying its token, the provenance chain ending at a human-approved commit exactly as part 10 demanded.
+
+### The guardrail stack
+
+The pattern that makes agents infrastructure rather than incidents, as a checklist:
+
+| Guardrail | Mechanism | Part 12 wall it closes |
+|---|---|---|
+| Scoped registries | Per-agent tool allowlists | Judgment-door entry |
+| Read/write separation | Write tools require human tokens | Wrong actions taken |
+| Grounding resources | SAP/specs addressable before tools | Invented conventions |
+| Evidence tools | diffs callable, logs immutable | Provenance gaps |
+| Budget and step limits | Loop caps, cost meters | Runaway autonomy |
+| Sandboxed execution | Containers, synthetic data tiers | Context-limit experiments |
+
+Teams that deployed agents without this stack produced the incident reports now cited in every governance talk. Teams that deployed with it report the same conclusion from both directions: autonomy is not granted to the model — it is granted to the *workflow*, and the workflow is a system you own.
+
+## The agentic way
+
+A part about agents needs its own mirror: the honest frontier status. Agent workflows in clinical contexts have crossed from demos into production for bounded loops — impact review, QC exception triage, document assembly — and remain experimental for open-ended autonomy, precisely because the guardrail economics of part 12 still price judgment the same way. The two-year direction is nonetheless clear: parts 4-10 of this series built the mechanical verification surfaces; agents are the layer that finally compounds them. The shops that feel ahead are the ones whose pipelines, ARDs, and MCP registries were ready — the model was interchangeable all along.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents compound whatever surface they find: constrained registries yield auditable automation; unconstrained access yields incident reports. The capability was never in the model — it was in the interfaces you built this year.</p>
+  <p>Rule: every agent deployment ships with its registry printed beside its run log; if the two cannot be read together, there is no deployment — there is an outage waiting for a date.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-12-28. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- Agents change the unit of work from drafted artifact to executed loop; MCP makes the loop's capabilities enumerable, scoped, and printable.
+- The protocol gift: tools/resources/prompts as declared interfaces — grounding before tools, reads free, writes gated.
+- Production pilots run bounded loops (impact review, QC triage) where part 12's verification economics already worked.
+- The guardrail stack is the deployment: scoped registries, tokens, grounding resources, evidence tools, budgets, sandboxes.
+- Provenance improves under this pattern if and only if run logs terminate at human-approved commits — the same sentence part 10 wrote.
+
+## FAQ
+
+**Do I need MCP, or is an API enough?**
+For one agent and one system, any interface works. The moment tools multiply — pipeline, ARD store, teal, QC — a declared standard pays: one registry, one auth model, one audit vocabulary. MCP's momentum across runtimes means the client side comes free; the discipline of declaring capabilities is the actual product.
+
+**Can agents touch patient-level data?**
+The same rules as any system: within validated environments, under connector-level access (part 11's pattern), and — in the current production pattern — agents mostly touch *derived* layers (ARD, aggregates, logs) with raw data staying behind the data layer's own gates. The registry makes the boundary auditable instead of aspirational.
+
+**What breaks first in production?**
+Step budgets and context discipline: agents asked to reason over whole protocols burn their windows and start guessing — the context wall, wearing a loop. The fix is architectural (grounding resources, smaller scopes), not prompt-level.
+
+**Is this acceptable under GxP?**
+The pattern is: agents are automation, and automation under GxP is a solved category — validated environment, declared interfaces, execution logs, human release gates. Part 9's qualification layer extends naturally to agent registries; expect the first formal guidance to read like part 11's evidence file with a registry section.
+
+**Next in the series:** the destination question — natural language to CDISC datasets, and how close the fully automatic submission really is.
+
+## Exercises
+
+1. **Design a registry.** Draft the MCP registry for your own pipeline: three tools (one read-only, one evidence, one write-gated) with scopes and blast radii, per this chapter's pattern.
+2. **Workflow with a hard stop.** Write the impact-review workflow from this chapter as a numbered plan with the human token's position explicit. Identify which step would fail first without grounding resources.
+3. **Guardrail mapping.** Take the six-guardrail stack table and map each guardrail to an artifact your shop could produce this month. Any guardrail without an artifact is the roadmap.
+
+## Case study: the registry that made the audit
+
+A team's first agent deployment was approved not on the model but on the printed registry: one page, every capability enumerated, writes token-gated, run logs immutable, provenance terminating at commits. The security review took twenty minutes because the questions the registry answers were answered by the registry. Reconstruct the review in both worlds: the interrogation without the artifact versus the walkthrough with it — and note that nothing about the model differed between them.

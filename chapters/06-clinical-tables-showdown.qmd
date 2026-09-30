@@ -1,0 +1,164 @@
+# rtables vs gt/gtsummary vs flextable: A Regulatory Showdown
+
+"Why do I spend all my life formatting tables?" is the most-quoted complaint in clinical programming history, and the three answers this industry has built — rtables, the gt family, and flextable — are all correct, for different definitions of the question. rtables answers "how do I express a complex submission table as a *structure*." gtsummary answers "how do I get a publication-grade *analysis* table in minutes." flextable answers "how do I get pixel control inside Word documents my reviewers still live in."
+
+Choosing between them is not a taste question. It is a requirements question, and this part settles it the only honest way: one adverse-event summary table, built three times, with the differences that actually matter — layout model, ecosystem, validation story, and what each costs you at review time.
+
+> **TL;DR** — The three table frameworks divide by *layout model*: rtables builds split-and-tabulate structures (submission shells first), gtsummary builds analysis summaries (statistics first, layout second), flextable builds documents (presentation first). Each has a regulatory track record; each is the wrong tool for another's job. This part gives the three builds, the structural map, and the decision tree.
+
+## The fundamentals
+
+### The three layout models
+
+Every table framework hides a model of what a table *is*, and the model predicts everything else:
+
+| Framework | A table is… | Strength | Weakness |
+|---|---|---|---|
+| `{rtables}` | A split-apply-tabulate tree over data | Arbitrary nesting; shells expressed as structure | Wordy for simple tables |
+| `{gtsummary}` + `{gt}` | A summary of an analysis, styled in layers | Statistics in minutes; publication defaults | Nested layouts need work |
+| `{flextable}` | A document object with cells | Pixel control; native Word/PowerPoint | No statistical brain at all |
+
+The deepest difference is where the *statistics* live. gtsummary computes them (it is an analysis engine that happens to render). rtables tabulates what you give it (you compute, it arranges — with `analyze()`/`summarize_row_groups()` and their analysis functions as the middle layer). flextable computes nothing; it is honest typesetting. This is why the ARD standard of part 7 — statistics as data, tables as renderings — slots so naturally *underneath* all three.
+
+### The validation dimension
+
+In regulated work, a table framework carries two separate validation questions: is the *package* qualifiable (part 9's risk logic), and is the *output* verifiable (can QC rebuild it independently). All three frameworks have submission track records; the differences are in QC ergonomics — how easily an independent programmer can reproduce your table from the same data and spec, and how visible the layout logic is in code review.
+
+## The modern workflow
+
+### The challenger table, three ways
+
+The same requirement: an AE summary by treatment — system organ class rows, preferred term nested within, counts and percentages of subjects, sorted by frequency. Same data, same numbers; watch the code speak in three languages.
+
+**Build 1 — rtables, structure first:**
+
+```r
+library(rtables)
+library(tern)   # add_rowcounts() lives here, not in rtables
+
+# count unique subjects per cell
+afun_subj_count <- function(x, .N_col) {
+  in_rows("n (%)" = rcell(c(length(unique(x)), 100 * length(unique(x)) / .N_col),
+                          format = "xx (xx.x%)"))
+}
+
+lyt <- basic_table(show_colcounts = TRUE) |>
+  split_rows_by("AEBODSYS", label_pos = "topleft") |>
+  add_rowcounts() |>
+  split_rows_by("AEDECOD") |>
+  analyze("USUBJID", afun = afun_subj_count)
+
+tbl <- build_table(lyt, df = adae, alt_counts_df = adsl)
+```
+
+The layout object *is* the shell: nesting, counts basis (subjects, not events — the classic AE trap), and row structure declared before any number exists. A reviewer reads the layout and knows the table's intent the way an inspector reads part 4's bricks.
+
+**Build 2 — gtsummary, statistics first:**
+
+```r
+library(gtsummary)
+library(dplyr)
+
+tbl <- adae |>
+  distinct(USUBJID, TRTA, AEBODSYS, AEDECOD) |>
+  tbl_summary(
+    by      = TRTA,
+    include = AEDECOD,
+    label   = AEDECOD ~ "Adverse Event",
+    statistic = all_categorical() ~ "{n} ({p}%)",
+    percent = "column"
+  ) |>
+  add_overall() |>
+  modify_spanning_header(all_stat_cols() ~ "**Treatment Received**")
+```
+
+Six lines to a styled summary table. The nesting by organ class costs extra work here — gtsummary's engine is the analysis variable, not the row tree — but the 80% of tables that are cross-tabs survive at this density.
+
+**Build 3 — flextable, presentation first:**
+
+```r
+library(dplyr)
+library(flextable)
+
+ae_summ <- adae |>
+  count(TRTA, AEBODSYS, AEDECOD) |>
+  mutate(cell = sprintf("%d", n)) |>
+  tidyr::pivot_wider(names_from = TRTA, values_from = cell, values_fill = "0")
+
+ft <- flextable(ae_summ) |>
+  merge_v(j = ~ AEBODSYS) |>
+  theme_booktabs() |>
+  set_header_labels(AEBODSYS = "System Organ Class",
+                    AEDECOD  = "Preferred Term")
+```
+
+The numbers came from dplyr, the judgment from you, the pixels from flextable. Nothing is hidden and nothing is computed — which in the right shop is exactly the point.
+
+### The decision tree
+
+Three questions, in order:
+
+| Question | If yes | If no |
+|---|---|---|
+| Does the shell have complex row nesting (SOC/PT, crossed factors)? | rtables | → next |
+| Is it an analysis summary — demographics, efficacy, safety cross-tabs? | gtsummary | → next |
+| Is the deliverable a Word/PPT document with exact formatting requirements? | flextable | Re-check requirements |
+
+Real shops run hybrids: rtables for the submission shell library, gtsummary for internal and exploratory review tables, flextable for the medical-writing boundary. The mistake is not mixing frameworks; it is letting one framework's model leak into another's job — nesting gymnastics in gtsummary, statistics re-implemented around flextable.
+
+### What QC sees
+
+The comparison that decides adoption is what an independent reviewer experiences:
+
+| QC dimension | rtables | gtsummary | flextable |
+|---|---|---|---|
+| Rebuild independently | Layout object guides reimplementation | High-level call, easy to mirror | Depends on upstream code quality |
+| Layout intent visible in code | Yes — the layout *is* code | Partially — defaults do a lot | No — intent is formatting |
+| Diffing across data cuts | Structural, stable | Stable for standard tables | Manual |
+
+## The agentic way
+
+Table code is the second-best-drafted artifact class in this series (after part 4's bricks): agents produce credible gtsummary calls and plausible rtables layouts from a shell description, and the review burden concentrates where it should — the counts basis, the denominator, the sort. Those three are exactly where an agent's fluency is most dangerous, because a wrong denominator produces a *cleaner-looking* table than a right one. Part 7's ARD pattern is the structural cure: when statistics live in a cards object before any table exists, the agent (and the human) review data, not typography.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents draft framework code well and typography prose perfectly; they choose denominators confidently and wrongly. The counting-basis question ("subjects or events?") is the single most common agent-introduced table defect in production logs.</p>
+  <p>Rule: the counts basis and denominator of every generated table are asserted in code a human wrote, before rendering.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-11-09. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- The frameworks divide by layout model: structure (rtables), statistics (gtsummary), presentation (flextable) — hire each for its model.
+- Complex submission nesting earns rtables; analysis summaries earn gtsummary; the Word boundary earns flextable. Hybrids are normal; model leakage is the anti-pattern.
+- Where statistics live predicts everything: computed inside (gtsummary), supplied outside (rtables), absent (flextable) — and part 7 moves them into data beneath all three.
+- QC ergonomics — rebuild, diff, review — should decide adoption as much as rendering features.
+- Whatever the framework, the counting basis is the bug that ships; assert it explicitly, every table, every time.
+
+## FAQ
+
+**How do the three frameworks render to RTF for submission packages?**
+All three reach RTF, by different roads: rtables reaches RTF via flextable conversion (`tt_to_flextable()`); the gt family renders through gtsave with growing RTF fidelity; flextable, born inside the Office ecosystem, writes Word natively and converts from there. The honest production note: shops with strict shell-fidelity requirements still validate one primary RTF route per framework rather than assuming parity, because typography edge cases — indentation of nested rows, splitting headers across pages — are exactly where renderers quietly disagree. Pin the renderer version in the pipeline (part 10) and the shell diff in QC catches what the eye misses.
+
+**Which one should my shop standardize on?**
+Standardize on a *division of labor*, not a single framework: shells in rtables, review tables in gtsummary, document boundary in flextable. Shops that forced one framework report the same lesson from opposite directions — either submission shells fighting a summary engine, or simple tables drowning in layout code.
+
+**How does this relate to the gt package itself?**
+gt is the rendering layer of the gt family — gtsummary produces summaries and hands them to gt (or other renderers) for styling. Learning order for this series' purposes: gtsummary first (you will use it weekly), gt second (you will customize monthly), rtables when the shell library calls.
+
+**Can I render the same table to HTML, RTF, and Word?**
+All three families render multi-format; flextable is strongest in Word/PowerPoint, the gt family in HTML/print, rtables through its own output pipelines. Your submission tooling (part 5's transport world, part 8's documents) usually picks the renderer for you.
+
+**What about tern — is that a fourth framework?**
+tern is the analysis/display library that pairs with rtables in the NEST ecosystem — a peer of gtsummary's statistics layer, not a fourth layout model. If you build teal applications (part 11), you meet tern there.
+
+**Next in the series:** the quiet revolution underneath all three — Analysis Results Data, and why tables are becoming data.
+
+## Exercises
+
+1. **Three builds, one shell.** Take a real AE shell and build its first block (SOC row, one PT, counts and percentages) in each framework. Note where each build locates the counting basis.
+2. **Decision-tree practice.** Classify six tables from your current work (demographics, primary efficacy, AE summary, concomitant meds listing, KM curve table, endpoint shift) into framework assignments with the three-question tree.
+3. **Denominator audit.** Find one table in your shop's library where the denominator is implicit. Write the assertion this chapter says should precede rendering — in code, not in a comment.
+
+## Case study: the cleaner wrong table
+
+A QC reviewer caught an AE table where every percentage was computed against the safety population — plausible, consistent, and wrong for a table whose shell specified treated subjects. The defect survived because it made every table *cleaner*: no cell below 1%. Reconstruct the detection with this chapter's tools: the counting-basis assertion in the build, the shell-diff in review, and the ARD join (next part) that would have caught it mechanically.

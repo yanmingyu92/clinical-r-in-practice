@@ -1,0 +1,11 @@
+---
+title: "Clinical R in Practice"
+---
+
+# Clinical R in Practice
+
+The Open-Source Stack Behind Regulated Drug Development.
+
+By Jaime Yan · <https://jaimeyan.com>
+
+Free and open. Companion volume to *Modern R in Practice*.

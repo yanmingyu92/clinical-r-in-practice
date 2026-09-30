@@ -1,0 +1,163 @@
+# targets Pipelines: Reproducible Clinical Analyses
+
+Ask a clinical programming team to re-run last quarter's analysis and you will learn everything about their engineering. Teams with scripts learn which laptop still has the right versions. Teams with pipelines answer a different way: they run one command, the pipeline rebuilds what changed, skips what didn't, and every number returns identical — or the diff shows exactly why not. The difference is not talent; it is whether the analysis *remembers itself*.
+
+`targets` is the industry's chosen memory. It represents your analysis as a directed graph of targets — data, derivations, results, reports — tracks their dependencies, and rebuilds only what a change touches. Combined with `renv` (frozen package environment) and `crew` (parallel workers), it produces the property this series has been circling since part 1: a submission-quality analysis is a *deterministic object*, not a heroic afternoon.
+
+> **TL;DR** — targets turns an analysis into a dependency graph with a cache: change the data cut and only downstream work reruns; audit the graph and every number's parentage is machine-readable; freeze with renv and it replays a year later bit-for-bit. This part builds the full clinical pipeline — SDTM in, ARD out, CSR renders triggered — with the parallelism and audit patterns that make it production-grade.
+
+## The fundamentals
+
+### The graph is the mental model
+
+A pipeline is a set of *targets* — named objects with functions that produce them — and the framework does the bookkeeping humans do badly:
+
+| Property | Scripts | targets |
+|---|---|---|
+| What changed? | You remember | Dependency graph knows |
+| What must rerun? | Everything, to be safe | Exactly the downstream subgraph |
+| Why does this number exist? | Provenance archaeology | `tar_visnetwork()` |
+| Did yesterday's run match? | "Should do" | Cache comparison, bit-for-bit |
+
+The graph encodes part 1's traceability principle *mechanically*: an ARD target's parents are the ADaM targets that fed it; a table's parent is the ARD; a report's parent is the table set. The pipeline's shape is the study's logic, inspectable as an artifact — which is why auditors who see one for the first time tend to ask why every shop doesn't run this way.
+
+### The three-layer freeze
+
+Reproducibility has three enemies — code changes, data changes, environment changes — and each has a dedicated guard:
+
+| Enemy | Guard | What it guarantees |
+|---|---|---|
+| Code change | Git + pipeline manifest | Any run is attributable to a commit |
+| Data change | targets cache keys | Only affected targets rebuild |
+| Environment drift | renv lockfile (+ `rang` for historical replay) | Same packages, same versions, same behavior |
+
+The lockfile is the technical twin of part 9's qualification layer — the memo says "we decided," the lockfile says "we run exactly that." One without the other answers only half the question.
+
+## The modern workflow
+
+### A clinical pipeline, end to end
+
+The whole series so far assembles into one `_targets.R`:
+
+```r
+# _targets.R
+library(targets)
+tar_option_set(packages = c("dplyr", "admiral", "metacore", "cards", "xportr"))
+
+# illustrative sketch: build_* / render_* are user-defined study functions
+list(
+  # Data in
+  tar_target(sdtm_files, list.files("sdtm", full.names = TRUE), format = "file"),
+  tar_target(adsl, build_adsl(sdtm_files)),
+  tar_target(adae, build_adae(sdtm_files)),
+
+  # Metadata spine (part 5)
+  tar_target(mc, metacore::define_to_metacore("specs/define.xml")),
+
+  # Results (part 7)
+  tar_target(ard_demog, ard_categorical(adsl, variables = AGEGR1, by = TRT01P)),
+  tar_target(ard_ae,    build_ard_ae(adae, adsl)),
+
+  # Outputs (parts 6, 8)
+  tar_target(tlf_demog, render_demog_table(ard_demog), format = "file"),
+  tar_target(csr, render_csr_chapters(ard_demog, ard_ae), format = "file")
+)
+```
+
+Run it:
+
+```r
+targets::tar_make()
+```
+
+First run builds everything. Change the data cut, run again — the pipeline skips to the affected subgraph in seconds. The cache is not an optimization; it is the audit trail of what depended on what.
+
+### Seeing the graph
+
+The audit artifact that changes conversations:
+
+```r
+targets::tar_visnetwork()   # the study's logic, rendered
+targets::tar_manifest()     # every target, its function, its packages
+targets::tar_outdated()     # what a data cut would touch — before you run it
+```
+
+`tar_outdated()` before a database lock is the industry's cheapest risk review: the meeting where someone asks "what does the new cut affect" gets a printout instead of opinions.
+
+### Parallelism with crew
+
+Long-running stages (simulation, bootstrap, per-study renders) parallelize without restructuring:
+
+```r
+library(crew)
+tar_option_set(
+  controller = crew_controller_local(workers = 8)
+)
+```
+
+Dynamic branching fans a target across groups — per-subject, per-study, per-table — and workers consume the queue. The clinical pattern that earns its keep: bootstrapping confidence intervals for part 6's tables and per-study CSR renders across a portfolio, each a branch, each cached independently.
+
+### The audit replay
+
+The scenario every validation conversation eventually reaches — "show me this run again, exactly":
+
+```r
+# shell: git checkout <submission-commit>
+renv::restore()        # environment from the lockfile at that commit
+targets::tar_make()    # cache confirms: everything already current
+# or, to force honest re-execution:
+targets::tar_destroy(ask = FALSE); targets::tar_make()
+```
+
+Bit-comparable outputs (part 7's ARD as JSON, hashes recorded) turn "should reproduce" into a boolean the inspector can watch flip to TRUE. For runs older than your lockfile discipline, `rang` reconstructs historical CRAN environments (currently installed from GitHub `r-hub/rang`) — archaeology replaced by engineering.
+
+### Where pipelines sit in the SCE
+
+The statistical computing environment conversation lands naturally here: the SCE (part 3's platform reality) constrains *where* pipelines run — validated compute, controlled inputs, logged execution. `targets` is deliberately SCE-agnostic: the same graph runs on a laptop, a validated server, or `crew`-dispatched HPC workers. What the SCE adds is the procedural wrapper — execution logs, access control, release gates — around a pipeline whose internal bookkeeping is already inspection-proof.
+
+## The agentic way
+
+Pipelines are the AI era's favorite substrate, for a structural reason: a target is a typed, testable unit with declared inputs and outputs — the granularity at which agents work safely. Production patterns already run: agents draft new targets from spec language, propose graph refactors as reviewable diffs, and interpret stale-target reports as maintenance actions. The frontier is agents *executing* pipelines on their own initiative; the discipline is the same one this series keeps teaching — the graph may propose, but the run log's provenance chain must always terminate at a human-approved commit.
+
+<div class="era-callout">
+  <p><strong>The agentic way</strong> — Agents draft targets, read manifests, and diagnose stale subgraphs better than most engineers read their own Makefiles. The failure mode is initiative: a pipeline that an agent "improved" and ran without a reviewed commit breaks the provenance chain that was the pipeline's point.</p>
+  <p>Rule: agents may edit the graph as pull requests and read any state; execution of the submission pipeline is triggered by humans alone.</p>
+  <p class="era-callout-asof">Volatile layer — last verified 2026-12-07. Re-verify before relying on tool specifics.</p>
+</div>
+
+## Key takeaways
+
+- The graph is the mental model: dependencies, cache, and rebuild scope are mechanical facts, not memories.
+- Three enemies, three guards — Git for code, cache keys for data, renv/rang for environment; the lockfile pairs with part 9's memos.
+- `tar_outdated()` before a lock is the cheapest impact review in the industry; `tar_visnetwork()` is the audit exhibit that ends arguments.
+- crew parallelism and dynamic branching buy back whole days on bootstrap and portfolio renders without restructuring.
+- The audit replay is a boolean, not a belief: lockfile plus cache plus hashes.
+
+## FAQ
+
+**How does the pipeline behave when the spec changes instead of the data?**
+The amendment scenario is targets' quiet second act: change the define.xml that the metacore target reads (part 5) and the graph treats it as a changed input — every downstream target that consumed the spec, from metadata checks through ARD to rendered tables, marks itself outdated and rebuilds. `tar_outdated()` before the amendment commit becomes the impact analysis: the enumerated stale list *is* the worklist, in dependency order, with nothing manual between the spec diff and the execution plan. Teams running amendments this way stop maintaining parallel change-control spreadsheets, because the graph already maintains the spreadsheet's every column — what changes, what it affects, what order to rebuild — as a side effect of existing.
+
+**Is targets only for big pipelines?**
+The payoff starts at about five steps — past the threshold where rerunning everything is cheaper than thinking. Most shops convert one safety pipeline first, watch `tar_outdated()` save a meeting, and never write a bare script again.
+
+**How does this interact with Quarto (part 8)?**
+Cleanly and by design: the CSR render is a file target, downstream of the ARD targets. Reports become pipeline outputs — rebuilt, cached, and attributed exactly like any other artifact.
+
+**What about SAS programs in the graph?**
+They integrate as targets too — the same pattern as part 8's engine, at pipeline scale: a SAS step is a node with declared inputs and outputs, and bilingual shops run mixed graphs without a second scheduling system.
+
+**Do we need targets if we have an SCE scheduler?**
+The SCE schedules *jobs*; targets remembers *science*. Shops with both run targets graphs as SCE jobs and keep the dependency intelligence inside the pipeline, where it can answer questions the job scheduler cannot hear.
+
+**Next in the series:** [the last engineering wall — Shiny in GxP, from rhino scaffold to a validation file](/blog/gxp-shiny-validation.html).
+
+## Exercises
+
+1. **First graph.** Convert a five-step analysis you already run (read, derive, summarize, plot, report) into a `_targets.R`. Run it twice; confirm the second run builds nothing.
+2. **Impact review.** Before your next data change, run `tar_outdated()` and compare its prediction with what actually rebuilds. Any surprise is a missing dependency declaration.
+3. **Parallelize a bootstrap.** Take a bootstrap computation and re-express it with dynamic branching and a crew controller. Measure the wall-clock change.
+
+## Case study: the rerun that couldn't
+
+A regulatory query arrived fourteen months after database lock: rerun the primary efficacy analysis with one clarification. The team discovered the analysis lived in a laptop's scripts, an environment that no longer resolved, and one function maintained by someone who had left. Six weeks of archaeology produced what a lockfile-plus-graph shop produces in an afternoon: checkout, restore, `tar_make`, hashes compared. Reconstruct both timelines and price the difference — the exercise is the whole argument for this chapter.

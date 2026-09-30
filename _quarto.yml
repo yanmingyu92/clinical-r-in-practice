@@ -1,0 +1,44 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "Clinical R in Practice"
+  subtitle: "The Open-Source Stack Behind Regulated Drug Development"
+  author: "Jaime Yan"
+  date: "2026-09-30"
+  chapters:
+    - index.qmd
+    - preface.qmd
+    - part: "Part I — The Lay of the Land"
+      chapters:
+        - chapters/01-clinical-data-flow-sdtm-to-submission.qmd
+        - chapters/02-pharmaverse-ecosystem-map.qmd
+        - chapters/03-sas-to-r-migration-ledger.qmd
+    - part: "Part II — The Data Chain"
+      chapters:
+        - chapters/04-admiral-adam-lego-method.qmd
+        - chapters/05-metadata-driven-development-metacore.qmd
+    - part: "Part III — The Reporting Engine"
+      chapters:
+        - chapters/06-clinical-tables-showdown.qmd
+        - chapters/07-ard-analysis-results-data.qmd
+        - chapters/08-quarto-clinical-study-reports.qmd
+    - part: "Part IV — Engineering Under Supervision"
+      chapters:
+        - chapters/09-r-validation-risk-based-framework.qmd
+        - chapters/10-targets-reproducible-pipelines.qmd
+        - chapters/11-gxp-shiny-validation.qmd
+    - part: "Part V — The Frontier"
+      chapters:
+        - chapters/12-llm-clinical-coding-cases.qmd
+        - chapters/13-ai-agents-mcp-clinical-stack.qmd
+        - chapters/14-natural-language-to-cdisc.qmd
+        - chapters/15-clinical-data-science-next-five-years.qmd
+  page-navigation: true
+  repo-url: https://jaimeyan.com
+
+format:
+  html:
+    theme: cosmo
+    toc: true
