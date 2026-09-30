@@ -1,0 +1,7 @@
+# Part V — The Frontier {.unnumbered}
+
+The volatile layer. LLM agents now draft derivations, generate modules, and write QC comparisons faster than any human — and the failure mode is uniform: confident, clean code over unsourced decisions. These chapters treat every capability claim as dated evidence, not direction, and each carries a last-verified date for exactly that reason.
+
+[Chapter 12](chapters/12-llm-clinical-coding-cases.qmd) reads the 2024–2026 production cases as ledger entries — task, model role, human gate, failure mode — and names the exact wall each one hit. [Chapter 13](chapters/13-ai-agents-mcp-clinical-stack.qmd) builds an agent workflow over clinical data with audit-friendly guardrails. [Chapter 14](chapters/14-natural-language-to-cdisc.qmd) judges how close natural-language-to-submission really is, and which bottleneck is regulatory rather than technical. [Chapter 15](chapters/15-clinical-data-science-next-five-years.qmd) compresses the whole series into one argument about the next five years.
+
+The rule every frontier chapter ends with: if an agent drafted it, a human cites it — SAP reference, standard, or spec — before it ships. The bottleneck that remains is not generation; it is verification.

@@ -1,44 +1,64 @@
 project:
   type: book
   output-dir: _book
+  resources:
+    - assets/cover.png
 
 book:
   title: "Clinical R in Practice"
   subtitle: "The Open-Source Stack Behind Regulated Drug Development"
   author: "Jaime Yan"
-  date: "2026-09-30"
+  cover-image: assets/cover.svg
+  favicon: assets/favicon.svg
+  image: https://yanmingyu92.github.io/clinical-r-in-practice/assets/cover.png
+  description: "A practical map of the open-source R stack for regulated clinical development: the pharmaverse ADaM toolchain, metadata-driven specs, regulatory-grade tables and the ARD standard, risk-based package validation, reproducible pipelines, and the honest state of LLM agents in trial programming."
+  site-url: "https://yanmingyu92.github.io/clinical-r-in-practice/"
+  repo-url: "https://github.com/yanmingyu92/clinical-r-in-practice"
+  page-footer:
+    left: "Author: [Jaime Yan](https://jaimeyan.com)"
+  open-graph: true
+  twitter-card: true
   chapters:
     - index.qmd
     - preface.qmd
-    - part: "Part I — The Lay of the Land"
+    - reading-guide.qmd
+    - part: part-1.qmd
       chapters:
         - chapters/01-clinical-data-flow-sdtm-to-submission.qmd
         - chapters/02-pharmaverse-ecosystem-map.qmd
         - chapters/03-sas-to-r-migration-ledger.qmd
-    - part: "Part II — The Data Chain"
+    - part: part-2.qmd
       chapters:
         - chapters/04-admiral-adam-lego-method.qmd
         - chapters/05-metadata-driven-development-metacore.qmd
-    - part: "Part III — The Reporting Engine"
+    - part: part-3.qmd
       chapters:
         - chapters/06-clinical-tables-showdown.qmd
         - chapters/07-ard-analysis-results-data.qmd
         - chapters/08-quarto-clinical-study-reports.qmd
-    - part: "Part IV — Engineering Under Supervision"
+    - part: part-4.qmd
       chapters:
         - chapters/09-r-validation-risk-based-framework.qmd
         - chapters/10-targets-reproducible-pipelines.qmd
         - chapters/11-gxp-shiny-validation.qmd
-    - part: "Part V — The Frontier"
+    - part: part-5.qmd
       chapters:
         - chapters/12-llm-clinical-coding-cases.qmd
         - chapters/13-ai-agents-mcp-clinical-stack.qmd
         - chapters/14-natural-language-to-cdisc.qmd
         - chapters/15-clinical-data-science-next-five-years.qmd
+    - part: "Appendix"
+      chapters:
+        - further-reading.qmd
+        - acknowledgments.qmd
   page-navigation: true
-  repo-url: https://jaimeyan.com
+  sidebar:
+    style: floating
 
 format:
   html:
     theme: cosmo
+    lang: en
     toc: true
+    callout-icon: true
+    css: assets/book.css

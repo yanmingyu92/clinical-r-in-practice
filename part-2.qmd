@@ -1,0 +1,7 @@
+# Part II — The Data Chain {.unnumbered}
+
+This is the production spine: standards-compliant datasets in, analysis-ready datasets out, with traceability preserved at every joint. The two chapters here are the most code-heavy in the book, and the most directly reusable in day-to-day study work.
+
+[Chapter 4](chapters/04-admiral-adam-lego-method.qmd) teaches the admiral LEGO method — building ADaM datasets from composable derivation bricks, where each brick is small enough to validate and the assembly reads like the spec. [Chapter 5](chapters/05-metadata-driven-development-metacore.qmd) closes the loop: your define spec becomes code, checks, labels, and transport files through metacore and xportr, so metadata stops being documentation *about* the data and becomes the data's enforceable contract.
+
+By the end of this part you should be able to take one dataset from your own shop's spec and rebuild it as bricks with a metadata-driven export — that rebuild, not the reading, is the completion criterion.

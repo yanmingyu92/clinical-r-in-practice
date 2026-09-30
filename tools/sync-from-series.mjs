@@ -38,9 +38,17 @@ for (const f of readdirSync(join(bookDir, 'chapters')).filter(f => f.endsWith('.
 	synced++;
 }
 
-// Front matter and project file track the series too; copy them over.
-for (const f of ['preface.qmd', 'index.qmd', '_quarto.yml']) {
+// Preface tracks the series roadmap; copy it over, then re-apply the book-side
+// heading attribute so the preface stays unnumbered in the book sidebar.
+// index.qmd and _quarto.yml are book-owned (homepage layout, site metadata,
+// cover/favicon wiring) and must NOT be overwritten by the generator output.
+for (const f of ['preface.qmd']) {
 	const src = join(freshDir, f);
-	if (existsSync(src)) copyFileSync(src, join(bookDir, f));
+	if (existsSync(src)) {
+		copyFileSync(src, join(bookDir, f));
+		const p = join(bookDir, f);
+		const text = readFileSync(p, 'utf8');
+		if (text.startsWith('# Preface\n')) writeFileSync(p, text.replace('# Preface\n', '# Preface {.unnumbered}\n'), 'utf8');
+	}
 }
-console.log(`synced ${synced} chapter(s) from ${freshDir}; preface/index/_quarto.yml refreshed`);
+console.log(`synced ${synced} chapter(s) from ${freshDir}; preface.qmd refreshed (index.qmd/_quarto.yml are book-owned)`);

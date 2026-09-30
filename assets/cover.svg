@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1120" viewBox="0 0 800 1120" role="img" aria-labelledby="title desc">
+  <title id="title">Clinical R in Practice — Jaime Yan</title>
+  <desc id="desc">A cream and deep-navy book cover with a three-node data flow from SDTM through ADaM to TLF, each node carrying a check mark.</desc>
+  <rect width="800" height="1120" fill="#f2f0e9"/>
+  <rect width="18" height="1120" fill="#2e8b74"/>
+  <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#1b2f4b">
+    <text x="78" y="105" font-size="21" letter-spacing="4">CLINICAL R IN PRACTICE</text>
+    <path d="M78 137H720" stroke="#1b2f4b" stroke-width="2"/>
+    <text x="72" y="280" font-size="82" font-weight="700">Clinical R</text>
+    <text x="72" y="397" font-size="88" font-weight="700">in Practice</text>
+    <text x="78" y="465" font-size="23">The Open-Source Stack Behind Regulated Drug Development</text>
+    <text x="78" y="517" font-size="18" fill="#4a5d80">Data Chain · Reporting · Validation · Frontier</text>
+  </g>
+  <rect x="78" y="601" width="642" height="282" rx="3" fill="#1b2f4b"/>
+  <!-- data flow: SDTM -> ADaM -> TLF -->
+  <g stroke="#6fb3a0" stroke-width="3" fill="none">
+    <path d="M262 742H348" marker-end="url(#arrow)"/>
+    <path d="M478 742H564" marker-end="url(#arrow)"/>
+  </g>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#6fb3a0"/>
+    </marker>
+  </defs>
+  <g stroke="#f2f0e9" stroke-width="2" fill="none" stroke-opacity=".14">
+    <path d="M116 660H680M116 820H680"/>
+  </g>
+  <g fill="#2e8b74" stroke="#f2f0e9" stroke-width="4">
+    <circle cx="205" cy="742" r="34"/>
+    <circle cx="421" cy="742" r="34"/>
+    <circle cx="637" cy="742" r="34"/>
+  </g>
+  <g stroke="#f2f0e9" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M191 742l10 10 18-20"/>
+    <path d="M407 742l10 10 18-20"/>
+    <path d="M623 742l10 10 18-20"/>
+  </g>
+  <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#f2f0e9" font-size="20" text-anchor="middle" font-weight="600">
+    <text x="205" y="810">SDTM</text>
+    <text x="421" y="810">ADaM</text>
+    <text x="637" y="810">TLF</text>
+  </g>
+  <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#6fb3a0" font-size="16" text-anchor="middle">
+    <text x="205" y="672">tabulate</text>
+    <text x="421" y="672">derive</text>
+    <text x="637" y="672">report</text>
+  </g>
+  <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#1b2f4b">
+    <text x="78" y="984" font-size="33" font-weight="600">Jaime Yan</text>
+    <text x="78" y="1030" font-size="18">Online practice edition · 2026</text>
+  </g>
+</svg>

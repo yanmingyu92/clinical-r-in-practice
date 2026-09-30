@@ -1,0 +1,7 @@
+# Part III — The Reporting Engine {.unnumbered}
+
+Datasets earn their keep when they become output a reviewer can read. This part is where the standards pressure, the tooling, and the reviewer's eyes all meet — if you only read one part of the book, read this one.
+
+[Chapter 6](chapters/06-clinical-tables-showdown.qmd) builds the same AE table three ways — rtables, gt/gtsummary, flextable — and hands you a decision tree instead of a habit. [Chapter 7](chapters/07-ard-analysis-results-data.qmd) explains the shift underneath all of it: tables are becoming data, and the ARD standard (cards, and the pipelines that consume it) is how that shift gets standardized. [Chapter 8](chapters/08-quarto-clinical-study-reports.qmd) assembles the pieces into parameterized clinical study reports — with the SAS engine honestly still in the loop where your shop needs it.
+
+The through-line: every formatting decision should trace back to a checkable summary rule. When it cannot, that is a finding, not a style choice.

@@ -1,0 +1,45 @@
+# Further Reading: The Standards and the Stacks Behind Them {.unnumbered}
+
+This reading map points to the official documentation, standards bodies, and community resources behind each part of the book. Follow an entry when the corresponding problem arises, and return with a small artifact of your own — a rebuilt dataset, a checklist adapted to your shop, a qualification memo draft. You do not need to finish any of these resources before starting the chapters here.
+
+## Standards and governance (Part I)
+
+**CDISC standards.** The [CDISC](https://www.cdisc.org/) library is the authoritative source for SDTM, SDTMIG, ADaM, and ADaMIG. The chapters in this book teach you to navigate these documents, not to memorize them. Read with a question: which of your shop's conventions is actually a standard, and which is a house rule that calcified? Write down three of each; the distinction matters at audit time.
+
+**The pharmaverse.** [pharmaverse.org](https://pharmaverse.org/) maintains the curated package map that [Chapter 2](chapters/02-pharmaverse-ecosystem-map.qmd) walks through, including each package's maintainers and maturity. Read with a question: for the three packages your pipeline depends on most, who owns them, and what is the succession plan if a maintainer steps back?
+
+**R Consortium working groups.** The [Submissions Working Group](https://rconsortium.github.io/submissions-wg/) publishes the pilot submissions that proved R-generated deliverables can pass through regulatory doors. [Chapter 3](chapters/03-sas-to-r-migration-ledger.qmd) cites these as evidence; reading the primary sources lets you argue migration from documents, not anecdotes.
+
+## The data chain (Part II)
+
+**admiral.** The [admiral documentation](https://pharmaverse.github.io/admiral/) — especially the function reference grouped by derivation family — is the companion reference for [Chapter 4](chapters/04-admiral-adam-lego-method.qmd). The admiral* extension packages (admiralonco, admiralvaccine, and others) show how the same brick pattern specializes per therapeutic area. Read with a question: which three derivations in your current study would benefit most from being rewritten as named bricks?
+
+**metacore and xportr.** The [metacore](https://atorus-research.github.io/metacore/) and [xportr](https://atorus-research.github.io/xportr/) documentation covers the spec-as-code workflow of [Chapter 5](chapters/05-metadata-driven-development-metacore.qmd). Read with a question: where does your define.xml disagree with your datasets today, and which side is wrong? The metacore checks in the chapter are the fastest way to find out.
+
+## Reporting (Part III)
+
+**rtables, gt/gtsummary, flextable.** The official docs — [rtables](https://insightsengineering.github.io/rtables/), [gt](https://gt.rstudio.com/), [gtsummary](https://www.danieldsjoberg.com/gtsummary/), [flextable](https://davidgohel.github.io/flextable/) — are the references behind the [Chapter 6](chapters/06-clinical-tables-showdown.qmd) showdown. Do not read all four; read the one the chapter's decision tree points you to, and revisit when your constraints change.
+
+**cards and the ARD standard.** The [cards documentation](https://insightsengineering.github.io/cards/) defines the analysis-results-data format of [Chapter 7](chapters/07-ard-analysis-results-data.qmd). Read with a question: which of your recurring tables could be regenerated from a stored ARD instead of re-run from raw data, and what would that save at QC time?
+
+**Quarto.** The [official Quarto guide](https://quarto.org/docs/guide/) — parameters, project execution, and freeze — underpins [Chapter 8](chapters/08-quarto-clinical-study-reports.qmd). Read with a question: when a data cut changes, which layers of your CSR pipeline should re-run, and which must provably not?
+
+## Validation and engineering (Part IV)
+
+**R Validation Hub.** The [R Validation Hub](https://www.pharmar.org/) publishes the white paper that [Chapter 9](chapters/09-r-validation-risk-based-framework.qmd)'s risk framework operationalizes, plus the [riskmetric](https://pharmar.github.io/riskmetric/) and riskassessment tooling. This is the closest thing the field has to a shared vocabulary for "fit for use" — cite it in your qualification memos.
+
+**targets.** The [targets manual](https://books.ropensci.org/targets/) is the reference for [Chapter 10](chapters/10-targets-reproducible-pipelines.qmd), especially the chapters on debugging and on what invalidates the cache. Read with a question: which target in your pipeline is silently over- or under-invalidated, and how would you prove it?
+
+**rhino and GxP Shiny.** The [rhino documentation](https://appsilon.github.io/rhino/) covers the scaffold of [Chapter 11](chapters/11-gxp-shiny-validation.qmd). Pair it with [Mastering Shiny](https://mastering-shiny.org/)'s chapters on the reactive graph and modules when the app's behavior, not its structure, is what needs defending.
+
+## The frontier (Part V)
+
+Part V's sources are deliberately perishable, and each frontier chapter carries its own last-verified date and in-text citations. Treat the vendor and tool claims there as a snapshot. The durable reading for this part is Part IV: the verification wall does not move, even as the tools climbing it do.
+
+## The companion volume
+
+[Modern R in Practice](https://yanmingyu92.github.io/posit-conf-2026-bilingual/book/en/) covers the general-purpose engineering foundation this book assumes: functions, iteration, testing, debugging, packaging, dashboards, and AI workflows outside the regulated context. Its clinical reading path ends roughly where this book begins.
+
+## Sources and use
+
+Links point to the official sites of the respective projects and organizations, checked on 2026-09-30. Package documentation and standards documents retain their own licenses and terms. The reading guidance and questions on this page are original to this book and published under CC-BY-SA 4.0.

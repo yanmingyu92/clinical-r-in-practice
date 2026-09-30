@@ -1,0 +1,19 @@
+# Authorship, sources, and acknowledgments {.unnumbered}
+
+## Authorship and editorial responsibility {.unnumbered}
+
+The author of *Clinical R in Practice* is **[Jaime Yan](https://jaimeyan.com)**. The book began as a fifteen-part weekly series published on the author's site; the book edition adds exercises, case studies, and the reading apparatus around each chapter. The series text remains the single source for chapter bodies — corrections land there first and are synced into the book.
+
+## Acknowledgments {.unnumbered}
+
+Thank you to the communities that build in the open and make a book like this possible: the pharmaverse maintainers and the Roche, GSK, Novartis, and Atorus teams behind its core packages; the R Validation Hub for giving "fit for use" a shared vocabulary; the R Consortium Submissions Working Group for proving the case with real pilot submissions; and CDISC for maintaining the standards everything here answers to. Readers who filed corrections and argued about the checklist tables improved every chapter.
+
+This book has no official affiliation with or endorsement from CDISC, the R Consortium, R Validation Hub, or any company whose open-source packages it teaches.
+
+## Using the sources {.unnumbered}
+
+Chapters link to official package documentation, standards, and community resources rather than reproducing them; [Further reading](further-reading.qmd) explains what each resource contributes. Package documentation and standards retain their own licenses. Simulated data is used throughout; no chapter contains patient data.
+
+## License and editions {.unnumbered}
+
+This book's original content is published under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This is a maintained online practice edition. Changes can be traced in the [version history](https://github.com/yanmingyu92/clinical-r-in-practice/commits/main/); report corrections through the [issue tracker](https://github.com/yanmingyu92/clinical-r-in-practice/issues).

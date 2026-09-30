@@ -1,0 +1,7 @@
+# Part IV — Engineering Under Supervision {.unnumbered}
+
+This part is what separates a demo from something QA can sign. The engineering disciplines here — risk assessment, reproducible pipelines, app validation — generalize to any field where open source meets auditors, and they are the chapters non-pharma readers get the most from.
+
+[Chapter 9](chapters/09-r-validation-risk-based-framework.qmd) reframes validation as risk-based reasoning rather than paperwork: you run a real package risk assessment and write the qualification memo QA actually expects. [Chapter 10](chapters/10-targets-reproducible-pipelines.qmd) rebuilds a clinical analysis as a targets pipeline that re-runs in minutes and replays exactly a year later. [Chapter 11](chapters/11-gxp-shiny-validation.qmd) takes a clinical Shiny app from rhino scaffold to a validation evidence file.
+
+The habit to carry out of this part: validation is an engineering discipline you can learn and defend, not a tax you pay at the end.

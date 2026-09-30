@@ -1,0 +1,7 @@
+# Part I — The Lay of the Land {.unnumbered}
+
+Before any package comes the territory: what data flows where, who builds the tools, and what switching stacks actually costs an organization. These three chapters build the context every later decision depends on. Skip them and the rest of the book reads as a tools tour; read them and every chapter afterwards has a frame.
+
+Start with [Chapter 1](chapters/01-clinical-data-flow-sdtm-to-submission.qmd), which draws the whole clinical data flow on one map — the four governed transformations from collection to submission, and exactly where R sits at each stage. [Chapter 2](chapters/02-pharmaverse-ecosystem-map.qmd) maps the people and packages: who maintains what in the pharmaverse, how the pieces interlock, and why knowing the maintainers is half of validation. [Chapter 3](chapters/03-sas-to-r-migration-ledger.qmd) closes the part with the migration ledger — what SAS-to-R transitions actually cost, with case studies that survived audit committees.
+
+Keep one question in view throughout: which of these facts will still be true in ten years? The answer is most of Part I — that is what makes it worth reading first.

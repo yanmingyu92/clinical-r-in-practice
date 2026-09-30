@@ -1,0 +1,58 @@
+# Reading guide {.unnumbered}
+
+Read the book in sequence or enter through the path that matches your role. Either way, reading alone is not the completion criterion: every chapter closes with exercises and a case study, and the stack only sticks when you run it.
+
+## How the book is organized {.unnumbered}
+
+Fifteen chapters, five parts, three layers that decay at different speeds:
+
+| Layer | What it contains | Where it appears | Half-life |
+|---|---|---|---|
+| L1 — The rules | CDISC traceability, risk-based validation thinking, GxP reasoning | Parts I and IV | A decade |
+| L2 — The stack | admiral, metacore, rtables, cards, teal, targets, rhino | Parts II–IV | Years; habits transfer even when APIs move |
+| L3 — The frontier | LLM agents, MCP servers, natural language to CDISC | Part V | Months; treat every specific claim as perishable |
+
+The layers are taught together, the way they exist in production: no admiral chapter makes sense without the traceability rules above it, and no AI chapter makes sense without the validation wall it has to climb. Each frontier chapter carries a *volatile layer* note with a last-verified date — re-check tool specifics before relying on them.
+
+## Three reading paths {.unnumbered}
+
+### The SAS programmer migrating (or being migrated) {#sas-path .unnumbered}
+
+Read Part I in full, then the [4](chapters/04-admiral-adam-lego-method.qmd) → [6](chapters/06-clinical-tables-showdown.qmd) → [7](chapters/07-ard-analysis-results-data.qmd) spine — ADaM and tables. Keep [Chapter 3](chapters/03-sas-to-r-migration-ledger.qmd) as ammunition for the budget meetings: it is written for the people who sign, not only the people who code.
+
+| Stage | Chapters | Evidence of completion |
+|---|---|---|
+| Vocabulary and context | [1](chapters/01-clinical-data-flow-sdtm-to-submission.qmd), [2](chapters/02-pharmaverse-ecosystem-map.qmd), [3](chapters/03-sas-to-r-migration-ledger.qmd) | You can draw the SDTM→ADaM→TLF flow and name the R package at each station |
+| The production spine | [4](chapters/04-admiral-adam-lego-method.qmd), [5](chapters/05-metadata-driven-development-metacore.qmd), [6](chapters/06-clinical-tables-showdown.qmd), [7](chapters/07-ard-analysis-results-data.qmd) | You rebuild one study dataset and one AE table from your own shop's spec |
+| The case for switching | [3](chapters/03-sas-to-r-migration-ledger.qmd), [9](chapters/09-r-validation-risk-based-framework.qmd) | You can argue migration cost and validation posture in front of an audit committee |
+
+### The R engineer entering clinical {#engineer-path .unnumbered}
+
+Read [Chapter 1](chapters/01-clinical-data-flow-sdtm-to-submission.qmd) for vocabulary, then jump to Part IV. Your engineering instincts are an asset; [Chapter 9](chapters/09-r-validation-risk-based-framework.qmd) is the license to use them. The data-chain chapters will feel foreign at first — that is expected, and [Chapter 4](chapters/04-admiral-adam-lego-method.qmd) is the gentlest entry.
+
+| Stage | Chapters | Evidence of completion |
+|---|---|---|
+| Domain vocabulary | [1](chapters/01-clinical-data-flow-sdtm-to-submission.qmd) | You stop saying "clean data" and start saying which standard governs the shape |
+| Engineering under supervision | [9](chapters/09-r-validation-risk-based-framework.qmd), [10](chapters/10-targets-reproducible-pipelines.qmd), [11](chapters/11-gxp-shiny-validation.qmd) | You write a qualification memo and a validation evidence file QA would accept |
+| Backfill the chain | [4](chapters/04-admiral-adam-lego-method.qmd), [5](chapters/05-metadata-driven-development-metacore.qmd), [7](chapters/07-ard-analysis-results-data.qmd) | You can explain why a derivation brick is easier to validate than a script |
+
+### The statistician or data-science lead {#lead-path .unnumbered}
+
+Read [2](chapters/02-pharmaverse-ecosystem-map.qmd), [3](chapters/03-sas-to-r-migration-ledger.qmd), [9](chapters/09-r-validation-risk-based-framework.qmd), and Part V. You will not write the code; you will decide whether the code is allowed. The checklist tables in each chapter are designed to be screenshotted into your governance deck.
+
+## A chapter study cycle {.unnumbered}
+
+1. **Skim the TL;DR.** Every chapter opens with one; decide what you are looking for before the details arrive.
+2. **Run the code.** Examples are written to be executed in a fresh R session. Predict key outputs before running.
+3. **Steal the checklist.** Each chapter ends its core argument with a selection or audit checklist — adapt it to your shop's context.
+4. **Do the exercises.** Three per chapter, moving from recall to application.
+5. **Work the case study.** The closing case study puts the chapter's decision in a realistic setting; write down your answer before comparing it with the discussion.
+6. **Note the verification date.** Frontier chapters state when their claims were last verified. If that date is old, re-check before citing specifics.
+
+## Code, data, and honesty about execution {.unnumbered}
+
+Code fences display teaching code; a few examples are intentionally illustrative sketches (marked as pseudocode in comments) that name a pattern rather than a runnable API. Simulated data stands in for real trial data throughout — no chapter contains patient data, and no example should be pointed at a real study without your institution's procedures and acceptance criteria.
+
+## The companion volume {.unnumbered}
+
+This book assumes general R fluency and spends no chapters on it. If you want the from-zero engineering foundation — functions, testing, reproducible delivery, and AI-assisted habits outside the regulated context — start with the companion volume, [Modern R in Practice](https://yanmingyu92.github.io/posit-conf-2026-bilingual/book/en/), and return here for the clinical stack. Together they are the curriculum the author wishes someone had handed him at the wall.

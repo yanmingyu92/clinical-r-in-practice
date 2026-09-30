@@ -1,11 +1,35 @@
 ---
-title: "Clinical R in Practice"
+image: https://yanmingyu92.github.io/clinical-r-in-practice/assets/cover.png
 ---
 
-# Clinical R in Practice
+# Title page {.unnumbered}
 
-The Open-Source Stack Behind Regulated Drug Development.
+A practical map of the open-source R stack used in regulated clinical development.
 
-By Jaime Yan · <https://jaimeyan.com>
+Pharma R is not "R plus some packages" — it is R under a legal reading of traceability, and that framing changes every tool choice. This book maps the whole stack the way it exists in production: the CDISC data chain, the pharmaverse toolchain, regulatory-grade reporting, risk-based validation, and the AI frontier that has to climb the same validation wall.
 
-Free and open. Companion volume to *Modern R in Practice*.
+**Author: [Jaime Yan](https://jaimeyan.com)** · Online practice edition · Free and open
+
+[Read the preface](preface.qmd){.btn .btn-primary}
+[Choose a reading path](reading-guide.qmd){.btn .btn-outline-primary}
+[Start at Chapter 1](chapters/01-clinical-data-flow-sdtm-to-submission.qmd){.btn .btn-outline-primary}
+
+## Five parts, one stack {.unnumbered}
+
+| Part | Question you will address | After this part you can… |
+|---|---|---|
+| [I — The Lay of the Land](part-1.qmd) | What flows where, who builds the tools, and what switching costs? | Draw the data flow from clinic to regulator and place R at each stage |
+| [II — The Data Chain](part-2.qmd) | How do standards-compliant datasets get built? | Build ADaM datasets from composable, traceable derivation bricks |
+| [III — The Reporting Engine](part-3.qmd) | How do datasets become regulatory-grade output? | Choose table tooling with evidence, and speak ARD in a pipeline |
+| [IV — Engineering Under Supervision](part-4.qmd) | What separates a demo from something QA can sign? | Run a risk assessment, rebuild analyses as replayable pipelines, validate a Shiny app |
+| [V — The Frontier](part-5.qmd) | What can LLM agents really do in trial programming? | Read capability claims as dated evidence, with the verification wall in view |
+
+## Prerequisites {#prerequisites .unnumbered}
+
+You should be comfortable reading R code — filtering and summarizing data, writing small functions, and following a pipeline. Clinical vocabulary (SDTM, ADaM, TLF) is introduced in [Chapter 1](chapters/01-clinical-data-flow-sdtm-to-submission.qmd), so domain newcomers can start at the beginning. You do not need prior experience with the pharmaverse, validation frameworks, or LLM tooling.
+
+## Series, book, and companion volume {.unnumbered}
+
+Every chapter pairs the series text with exercises and a case study. The selection checklists in each chapter are designed to be stolen for your next validation meeting. See [Further reading](further-reading.qmd) for the official documentation and standards behind each part.
+
+This is the clinical companion to [Modern R in Practice](https://yanmingyu92.github.io/posit-conf-2026-bilingual/book/en/), which teaches the general-purpose R engineering skills this book builds on. Read that one for functions, testing, and delivery craft; read this one for the regulated stack.

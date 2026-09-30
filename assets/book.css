@@ -1,0 +1,243 @@
+/* Clinical R in Practice — book theme
+   Palette: deep navy ink, signal-green accent, cream paper.
+   Same skeleton as Modern R in Practice, swapped identity colors,
+   plus the .era-callout component used by every chapter. */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --book-ink: #1b2f4b;
+  --book-ink-deep: #12203a;
+  --book-ink-soft: #4a5d80;
+  --book-accent: #2e8b74;
+  --book-accent-soft: #6fb3a0;
+  --book-paper: #faf8f2;
+  --book-cream: #f2f0e9;
+  --book-line: #e2ded2;
+  --book-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --book-sans: "Inter", -apple-system, "Segoe UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --book-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --book-radius: 10px;
+  --book-shadow: 0 10px 30px rgba(27, 47, 75, .10);
+}
+
+::selection { background: #2e8b7433; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--book-sans);
+  line-height: 1.8;
+  background: var(--book-paper);
+}
+
+/* ---------- Title banner (book + chapter headers) ---------- */
+
+#title-block-header {
+  position: relative;
+  margin: 0 0 2.2rem;
+  padding: 2.4rem 2.6rem 2rem;
+  border-radius: var(--book-radius);
+  background:
+    radial-gradient(1200px 300px at 85% -40%, #2e8b7440, transparent 60%),
+    linear-gradient(135deg, var(--book-ink-deep) 0%, var(--book-ink) 55%, #274a72 100%);
+  box-shadow: var(--book-shadow);
+  overflow: hidden;
+}
+#title-block-header::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--book-accent), var(--book-accent-soft), transparent);
+}
+#title-block-header .title {
+  font-family: var(--book-serif);
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: #f5f4ec;
+  margin-bottom: .35rem;
+}
+#title-block-header .subtitle {
+  font-family: var(--book-serif);
+  font-size: 1.15em;
+  font-weight: 500;
+  color: #c9d4c4;
+  opacity: 1;
+}
+#title-block-header .quarto-title-meta-heading,
+#title-block-header .quarto-title-meta { color: #b6c3d6; }
+#title-block-header .quarto-title-meta-author a,
+#title-block-header a { color: #cfe3d8; }
+#title-block-header .description {
+  color: #c6d2e0;
+  font-size: 1.02em;
+  max-width: 46rem;
+}
+
+/* ---------- Headings ---------- */
+
+h1, h2, h3, h4 {
+  font-family: var(--book-serif);
+  color: var(--book-ink);
+  font-weight: 600;
+}
+h2 {
+  margin-top: 2.2rem;
+  padding-bottom: .35rem;
+  border-bottom: 2px solid var(--book-cream);
+  position: relative;
+}
+h2::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -2px;
+  width: 3.2rem; height: 2px;
+  background: var(--book-accent);
+}
+h2 .header-section-number, h3 .header-section-number { color: var(--book-accent); }
+
+/* ---------- Links ---------- */
+
+main a { color: #20615a; text-decoration-color: #20615a44; text-underline-offset: 2px; }
+main a:hover { color: var(--book-accent); text-decoration-color: var(--book-accent); }
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  margin: .35rem .5rem .35rem 0;
+  border-radius: 999px;
+  padding: .5rem 1.2rem;
+  font-weight: 600;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(27, 47, 75, .18); }
+.btn-primary { background: var(--book-ink); border-color: var(--book-ink); }
+.btn-primary:hover { background: var(--book-ink-deep); border-color: var(--book-ink-deep); }
+.btn-outline-primary { color: var(--book-ink); border-color: var(--book-ink); }
+.btn-outline-primary:hover { background: var(--book-ink); border-color: var(--book-ink); color: #f5f4ec; }
+
+/* ---------- Code ---------- */
+
+code:not(pre code) {
+  font-family: var(--book-mono);
+  font-size: .88em;
+  background: #edf0e9;
+  color: #1f5c4b;
+  padding: .12em .38em;
+  border-radius: 5px;
+}
+pre, pre.sourceCode, div.sourceCode {
+  font-family: var(--book-mono);
+  background: #fbfaf6;
+  border: 1px solid var(--book-line);
+  border-left: 3px solid var(--book-accent-soft);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(27, 47, 75, .05);
+}
+div.sourceCode { overflow: hidden; }
+div.sourceCode pre.sourceCode { border: none; box-shadow: none; margin: 0; }
+
+/* ---------- Callouts ---------- */
+
+.callout {
+  border-radius: 8px;
+  border: 1px solid var(--book-line);
+  box-shadow: 0 2px 10px rgba(27, 47, 75, .05);
+}
+.callout .callout-header { font-family: var(--book-sans); font-weight: 600; }
+
+/* ---------- Era callout (per-chapter "volatile layer" note) ---------- */
+
+.era-callout {
+  margin: 1.4rem 0;
+  padding: .9rem 1.2rem .7rem;
+  border: 1px solid var(--book-line);
+  border-left: 4px solid var(--book-accent);
+  border-radius: 0 8px 8px 0;
+  background: #f2f7f4;
+  box-shadow: 0 2px 10px rgba(27, 47, 75, .05);
+}
+.era-callout p { margin-bottom: .5rem; color: var(--book-ink-soft); }
+.era-callout p strong { color: var(--book-ink); }
+.era-callout-asof {
+  font-size: .85em;
+  font-style: italic;
+  color: #6b7a95;
+  margin-bottom: .2rem !important;
+}
+
+/* ---------- Tables ---------- */
+
+main table { border-radius: 8px; overflow: hidden; }
+main thead th {
+  background: var(--book-ink);
+  color: #f2f0e9;
+  font-family: var(--book-sans);
+  font-weight: 600;
+  border: none;
+}
+main tbody tr:nth-child(even) { background: #f3f2ea; }
+main tbody tr:hover { background: #e9eee6; }
+main th, main td { border-color: var(--book-line); }
+
+/* ---------- Blockquotes ---------- */
+
+blockquote {
+  border-left: 3px solid var(--book-accent-soft);
+  background: #f5f6ef;
+  padding: .8rem 1.2rem;
+  border-radius: 0 8px 8px 0;
+  color: var(--book-ink-soft);
+  font-style: italic;
+}
+
+/* ---------- Cover image ---------- */
+
+.quarto-cover-image {
+  max-width: 300px;
+  border-radius: 6px;
+  box-shadow: 0 18px 44px rgba(18, 32, 58, .28);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.quarto-cover-image:hover { transform: translateY(-4px); box-shadow: 0 26px 56px rgba(18, 32, 58, .34); }
+
+/* ---------- Sidebar ---------- */
+
+.sidebar-title { font-weight: 700; font-family: var(--book-serif); font-size: 1.15rem; }
+.sidebar nav[role=navigation] .sidebar-item .sidebar-item-text { border-radius: 6px; }
+.sidebar nav[role=navigation] .sidebar-item .sidebar-item-container > .sidebar-item-text {
+  padding: .2rem .5rem;
+  transition: background .12s ease;
+}
+.sidebar nav[role=navigation] .sidebar-item .sidebar-item-text:hover { background: #1b2f4b0f; }
+.sidebar nav[role=navigation] .sidebar-item .sidebar-item-text.active {
+  background: #1b2f4b14;
+  color: var(--book-ink);
+  font-weight: 600;
+  border-left: 3px solid var(--book-accent);
+  padding-left: calc(.5rem - 3px);
+}
+.sidebar nav[role=navigation] .chapter-number { color: var(--book-accent); font-weight: 600; }
+.sidebar-section .sidebar-item-text { font-family: var(--book-serif); font-weight: 600; color: var(--book-ink); }
+
+/* ---------- Right-hand TOC ---------- */
+
+#quarto-margin-sidebar nav[role=doc-toc] > ul a.nav-link.active {
+  border-left-color: var(--book-accent);
+  color: var(--book-ink);
+  font-weight: 600;
+}
+
+/* ---------- Figures ---------- */
+
+.figure-caption, .figcaption { color: var(--book-ink-soft); font-size: .92em; }
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 600px) {
+  #title-block-header { padding: 1.6rem 1.3rem 1.3rem; }
+  .quarto-cover-image { float: none !important; display: block; width: 240px; max-width: 80%; margin: 0 auto 1.5rem; }
+  main table { display: block; max-width: 100%; overflow-x: auto; }
+  main th, main td { min-width: 9rem; }
+}

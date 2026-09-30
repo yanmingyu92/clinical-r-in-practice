@@ -1,4 +1,4 @@
-# Preface
+# Preface {.unnumbered}
 
 This book collects the complete *Clinical R in Practice* series.
 
