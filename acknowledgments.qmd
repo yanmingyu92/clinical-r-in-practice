@@ -17,3 +17,5 @@ Chapters link to official package documentation, standards, and community resour
 ## License and editions {.unnumbered}
 
 This book's original content is published under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This is a maintained online practice edition. Changes can be traced in the [version history](https://github.com/yanmingyu92/clinical-r-in-practice/commits/main/); report corrections through the [issue tracker](https://github.com/yanmingyu92/clinical-r-in-practice/issues).
+
+Archived releases are preserved on Zenodo and citable as: Yan, J. (2026). *Clinical R in Practice: The Open-Source Stack Behind Regulated Drug Development*. Zenodo. [https://doi.org/10.5281/zenodo.23085878](https://doi.org/10.5281/zenodo.23085878).

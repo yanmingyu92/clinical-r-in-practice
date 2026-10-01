@@ -6,6 +6,7 @@ A free, open Quarto book mapping the open-source R stack used in regulated
 clinical development — built from the *Clinical R in Practice* series on
 [jaimeyan.com](https://jaimeyan.com), expanded with exercises and case studies.
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23085878.svg)](https://doi.org/10.5281/zenodo.23085878)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/) [![Render and deploy](https://github.com/yanmingyu92/clinical-r-in-practice/actions/workflows/quarto-gh-pages.yml/badge.svg)](https://github.com/yanmingyu92/clinical-r-in-practice/actions/workflows/quarto-gh-pages.yml) [![Made with Quarto](https://img.shields.io/badge/Made%20with-Quarto-blue.svg)](https://quarto.org/)
 
 ## Read the book
@@ -45,15 +46,16 @@ frontier chapter carries a last-verified date).
 ## Cite this book
 
 > Yan, J. (2026). *Clinical R in Practice: The Open-Source Stack Behind
-> Regulated Drug Development*. <https://yanmingyu92.github.io/clinical-r-in-practice/>
+> Regulated Drug Development*. Zenodo. <https://doi.org/10.5281/zenodo.23085878>
 
 ```bibtex
 @book{yan2026clinicalr,
   author    = {Yan, Jaime},
   title     = {Clinical R in Practice: The Open-Source Stack Behind Regulated Drug Development},
   year      = {2026},
-  url       = {https://yanmingyu92.github.io/clinical-r-in-practice/},
-  note      = {Free online edition}
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.23085878},
+  url       = {https://doi.org/10.5281/zenodo.23085878}
 }
 ```
 
