@@ -1,0 +1,39 @@
+{
+  "title": "Clinical R in Practice: The Open-Source Stack Behind Regulated Drug Development",
+  "description": "A free, open book mapping the open-source R stack used in regulated clinical development: the pharmaverse ADaM toolchain, metadata-driven specs, regulatory-grade tables and the ARD standard, risk-based package validation, reproducible pipelines, and the honest state of LLM agents in trial programming. 15 chapters in 5 parts, with exercises and case studies.",
+  "upload_type": "publication",
+  "publication_type": "book",
+  "creators": [
+    {
+      "name": "Yan, Jaime"
+    }
+  ],
+  "license": "CC-BY-SA-4.0",
+  "keywords": [
+    "R",
+    "pharmaverse",
+    "CDISC",
+    "ADaM",
+    "clinical trials",
+    "drug development",
+    "validation",
+    "Quarto",
+    "open source"
+  ],
+  "language": "eng",
+  "access_right": "open",
+  "related_identifiers": [
+    {
+      "scheme": "url",
+      "identifier": "https://yanmingyu92.github.io/clinical-r-in-practice/",
+      "relation": "isIdenticalTo",
+      "resource_type": "publication-book"
+    },
+    {
+      "scheme": "doi",
+      "identifier": "10.5281/zenodo.22832959",
+      "relation": "isSupplementTo",
+      "resource_type": "publication-book"
+    }
+  ]
+}
