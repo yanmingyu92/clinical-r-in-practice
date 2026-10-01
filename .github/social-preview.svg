@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="Clinical R in Practice — Jaime Yan">
+  <rect width="1280" height="640" fill="#1b2f4b"/>
+  <rect width="1280" height="640" fill="url(#g)" opacity=".35"/>
+  <defs>
+    <radialGradient id="g" cx="85%" cy="-10%" r="80%">
+      <stop offset="0%" stop-color="#2e8b74"/>
+      <stop offset="60%" stop-color="#1b2f4b"/>
+    </radialGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#6fb3a0"/>
+    </marker>
+  </defs>
+  <rect width="14" height="640" fill="#2e8b74"/>
+  <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif">
+    <text x="80" y="120" font-size="20" letter-spacing="5" fill="#6fb3a0">CLINICAL R IN PRACTICE</text>
+    <text x="76" y="230" font-size="64" font-weight="700" fill="#f5f4ec">Clinical R in Practice</text>
+    <text x="80" y="300" font-size="26" fill="#c6d2e0">The Open-Source Stack Behind Regulated Drug Development</text>
+    <text x="80" y="352" font-size="19" fill="#8fa0bd">pharmaverse · ADaM · ARD · Validation · Reproducible Pipelines · LLM Agents</text>
+    <text x="80" y="560" font-size="28" font-weight="600" fill="#f5f4ec">Jaime Yan</text>
+    <text x="80" y="596" font-size="17" fill="#8fa0bd">Free and open · jaimeyan.com</text>
+  </g>
+  <g>
+    <rect x="880" y="170" width="330" height="300" rx="6" fill="#12203a"/>
+    <g stroke="#6fb3a0" stroke-width="3" fill="none">
+      <path d="M985 320H1045" marker-end="url(#arrow)"/>
+      <path d="M1105 320H1165" marker-end="url(#arrow)"/>
+    </g>
+    <g fill="#2e8b74" stroke="#f2f0e9" stroke-width="3">
+      <circle cx="955" cy="320" r="26"/>
+      <circle cx="1075" cy="320" r="26"/>
+      <circle cx="1195" cy="320" r="26"/>
+    </g>
+    <g stroke="#f2f0e9" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M944 320l8 8 14-16"/>
+      <path d="M1064 320l8 8 14-16"/>
+      <path d="M1184 320l8 8 14-16"/>
+    </g>
+    <g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#f2f0e9" font-size="16" text-anchor="middle" font-weight="600">
+      <text x="955" y="378">SDTM</text>
+      <text x="1075" y="378">ADaM</text>
+      <text x="1195" y="378">TLF</text>
+    </g>
+  </g>
+</svg>

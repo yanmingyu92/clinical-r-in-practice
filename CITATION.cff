@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this book, please cite it as below."
+title: "Clinical R in Practice: The Open-Source Stack Behind Regulated Drug Development"
+authors:
+  - family-names: Yan
+    given-names: Jaime
+    url: https://jaimeyan.com
+url: https://github.com/yanmingyu92/clinical-r-in-practice
+license: CC-BY-SA-4.0
+date-released: 2026-09-30
+preferred-citation:
+  type: book
+  title: "Clinical R in Practice: The Open-Source Stack Behind Regulated Drug Development"
+  authors:
+    - family-names: Yan
+      given-names: Jaime
+      url: https://jaimeyan.com
+  url: https://yanmingyu92.github.io/clinical-r-in-practice/
+  license: CC-BY-SA-4.0
+  year: 2026
